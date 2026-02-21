@@ -19,6 +19,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//b
 
     error JBOwnableOverrides_InvalidNewOwner();
+    error JBOwnableOverrides_ProjectDoesNotExist();
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -140,6 +141,11 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         _checkOwner();
         if (projectId == 0 || projectId > type(uint88).max) {
             revert JBOwnableOverrides_InvalidNewOwner();
+        }
+
+        // Make sure the project exists to prevent permanent loss of contract control.
+        if (projectId > PROJECTS.count()) {
+            revert JBOwnableOverrides_ProjectDoesNotExist();
         }
 
         _transferOwnership(address(0), uint88(projectId));
