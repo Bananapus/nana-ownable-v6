@@ -26,8 +26,8 @@ Drop-in Juicebox-aware replacement for OpenZeppelin `Ownable` that lets a contra
 
 | Dependency | Import | Used For |
 |------------|--------|----------|
-| `nana-core-v5` | `IJBPermissions`, `JBPermissioned` | Permission checks for delegated access |
-| `nana-core-v5` | `IJBProjects` | Resolving project NFT holder as owner |
+| `nana-core-v6` | `IJBPermissions`, `JBPermissioned` | Permission checks for delegated access |
+| `nana-core-v6` | `IJBProjects` | Resolving project NFT holder as owner |
 | `@openzeppelin/contracts` | `Context` | `_msgSender()` support |
 
 ## Key Types
@@ -46,7 +46,7 @@ Drop-in Juicebox-aware replacement for OpenZeppelin `Ownable` that lets a contra
 ## Example Integration
 
 ```solidity
-import {JBOwnable} from "@bananapus/ownable-v5/src/JBOwnable.sol";
+import {JBOwnable} from "@bananapus/ownable-v6/src/JBOwnable.sol";
 
 contract MyHook is JBOwnable {
     constructor(
