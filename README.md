@@ -1,42 +1,39 @@
 # nana-ownable-v5
 
-Drop-in replacement for OpenZeppelin `Ownable` that supports Juicebox project ownership and permission delegation via `JBPermissions`.
+Juicebox-aware ownership model that ties contract ownership to a Juicebox project NFT or an address, with delegated access through `JBPermissions`.
 
 ## Architecture
 
 | Contract | Description |
-|---|---|
-| `src/JBOwnable.sol` | Concrete contract with `onlyOwner` modifier. Inherit this for new contracts. |
-| `src/JBOwnableOverrides.sol` | Abstract base with all ownership logic. Use when overriding an existing `Ownable` dependency. |
-| `src/interfaces/IJBOwnable.sol` | Interface for `JBOwnable`. |
-| `src/structs/JBOwner.sol` | Struct: `address owner`, `uint88 projectId`, `uint8 permissionId`. |
+|----------|-------------|
+| `JBOwnable` | Concrete implementation providing an `onlyOwner` modifier and ownership transfer events. Inherits `JBOwnableOverrides`. |
+| `JBOwnableOverrides` | Abstract base containing all ownership logic: owner resolution, transfers, renunciation, and permission delegation via `JBPermissions`. |
 
-### Ownership Model
+### Supporting Types
 
-Ownership is determined by a `JBOwner` struct:
+| Type | Description |
+|------|-------------|
+| `JBOwner` | Struct packing `address owner`, `uint88 projectId`, and `uint8 permissionId` into a single slot. |
+| `IJBOwnable` | Interface exposing ownership queries, transfers, renunciation, and permission ID management. |
 
-1. If `projectId != 0`, the holder of the `JBProjects` NFT with that ID is the owner.
-2. If `projectId == 0`, the `owner` address is the owner.
-3. The owner can delegate access to other addresses via `JBPermissions` using `permissionId`.
+### Ownership Modes
+
+1. **Project ownership** -- If `JBOwner.projectId` is nonzero, the holder of that `JBProjects` ERC-721 is the owner.
+2. **Address ownership** -- If `projectId` is zero, `JBOwner.owner` is the owner directly.
+3. **Delegated access** -- The owner can grant others access via `JBPermissions.setPermissionsFor(...)` using the configured `permissionId`.
 
 The `permissionId` resets to 0 on every ownership transfer to prevent permission clashes.
 
 ## Install
 
 ```bash
-npm install @bananapus/ownable
-```
-
-Or with Forge:
-
-```bash
-forge install Bananapus/nana-ownable
+npm install
 ```
 
 ## Develop
 
-```bash
-npm ci && forge install
-forge build
-forge test
-```
+| Command | Description |
+|---------|-------------|
+| `forge build` | Compile contracts |
+| `forge test` | Run tests |
+| `forge coverage --match-path "./src/*.sol" --report lcov --report summary` | Generate coverage report |

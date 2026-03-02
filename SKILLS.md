@@ -1,47 +1,62 @@
-# nana-ownable-v5 — AI Reference
+# nana-ownable-v5
 
 ## Purpose
 
-Extends OpenZeppelin's `Ownable` pattern so that contract ownership can be held by a Juicebox project (via the `JBProjects` ERC-721 NFT) instead of just an EOA address. Integrates with `JBPermissions` for delegated owner access.
+Drop-in Juicebox-aware replacement for OpenZeppelin `Ownable` that lets a contract be owned by a Juicebox project (via its ERC-721) or a plain address, with delegated access through `JBPermissions`.
 
 ## Contracts
 
-### JBOwnable (src/JBOwnable.sol)
-Concrete contract. Provides the `onlyOwner` modifier and emits `OwnershipTransferred` events.
+| Contract | Role |
+|----------|------|
+| `JBOwnable` | Concrete modifier (`onlyOwner`) and event emission for ownership transfers. |
+| `JBOwnableOverrides` | Abstract base with ownership state, resolution, transfers, renunciation, and permission delegation. |
 
-**Constructor:**
-```solidity
-constructor(IJBPermissions permissions, IJBProjects projects, address initialOwner, uint88 initialProjectIdOwner)
-```
+## Key Functions
 
-### JBOwnableOverrides (src/JBOwnableOverrides.sol)
-Abstract base containing all ownership logic. Extends `JBPermissioned` and `Context`.
-
-**State:**
-- `IJBProjects public immutable PROJECTS`
-- `JBOwner public jbOwner` — packed struct: `address owner`, `uint88 projectId`, `uint8 permissionId`
-
-## Entry Points
-
-```solidity
-function owner() public view returns (address)
-function transferOwnership(address newOwner) public
-function transferOwnershipToProject(uint256 projectId) public
-function renounceOwnership() public
-function setPermissionId(uint8 permissionId) public
-```
-
-All mutating functions call `_checkOwner()` which uses `_requirePermissionFrom()`.
+| Function | Contract | What it does |
+|----------|----------|--------------|
+| `owner()` | `JBOwnableOverrides` | Returns the current owner address -- resolves project NFT holder if `projectId` is set. |
+| `transferOwnership(address)` | `JBOwnableOverrides` | Transfers ownership to a new address. Resets `permissionId`. |
+| `transferOwnershipToProject(uint256)` | `JBOwnableOverrides` | Transfers ownership to a Juicebox project. The project NFT holder becomes owner. |
+| `renounceOwnership()` | `JBOwnableOverrides` | Permanently gives up ownership (sets owner to zero address, projectId to 0). |
+| `setPermissionId(uint8)` | `JBOwnableOverrides` | Changes which `JBPermissions` permission ID grants delegated owner access. |
+| `_checkOwner()` | `JBOwnableOverrides` | Internal view used by `onlyOwner`; calls `_requirePermissionFrom` against the resolved owner. |
 
 ## Integration Points
 
-- **JBPermissions**: Checked in `_checkOwner()` — the owner can grant other addresses access via `permissionId`.
-- **JBProjects**: When `projectId != 0`, `PROJECTS.ownerOf(projectId)` determines the owner.
-- **Drop-in replacement**: Any contract using OZ `Ownable` can switch to `JBOwnable` for project-based ownership.
+| Dependency | Import | Used For |
+|------------|--------|----------|
+| `nana-core-v5` | `IJBPermissions`, `JBPermissioned` | Permission checks for delegated access |
+| `nana-core-v5` | `IJBProjects` | Resolving project NFT holder as owner |
+| `@openzeppelin/contracts` | `Context` | `_msgSender()` support |
 
-## Key Patterns
+## Key Types
 
-- **Dual ownership mode**: EOA (projectId == 0) or project NFT holder (projectId != 0). Never both.
-- **permissionId reset**: On every `_transferOwnership`, `permissionId` resets to 0 to prevent the new owner from inheriting the previous owner's permission delegations.
-- **Constructor validation**: Reverts if both `initialOwner` and `initialProjectIdOwner` are zero (prevents accidentally unowned contracts).
-- **JBOwner struct packing**: `address` (160 bits) + `uint88` (88 bits) + `uint8` (8 bits) = 256 bits = 1 storage slot.
+| Struct/Enum | Key Fields | Used In |
+|-------------|------------|---------|
+| `JBOwner` | `address owner`, `uint88 projectId`, `uint8 permissionId` | `JBOwnableOverrides.jbOwner` -- single storage slot (160+88+8=256 bits) |
+
+## Gotchas
+
+- You cannot set both `owner` and `projectId` to nonzero values simultaneously -- `_transferOwnership` reverts with `JBOwnableOverrides_InvalidNewOwner`.
+- Constructor reverts if both `initialOwner` and `initialProjectIdOwner` are zero. To create an unowned contract, set an owner then call `renounceOwnership()` in the constructor body.
+- `_transferOwnership` resets `permissionId` to 0 on every transfer, which revokes all previously delegated access.
+- `projectId` is `uint88`, so project IDs above `type(uint88).max` are rejected by `transferOwnershipToProject`.
+
+## Example Integration
+
+```solidity
+import {JBOwnable} from "@bananapus/ownable-v5/src/JBOwnable.sol";
+
+contract MyHook is JBOwnable {
+    constructor(
+        IJBPermissions permissions,
+        IJBProjects projects,
+        uint88 projectId
+    ) JBOwnable(permissions, projects, address(0), projectId) {}
+
+    function restrictedAction() external onlyOwner {
+        // Only the project NFT holder (or delegated addresses) can call this.
+    }
+}
+```
