@@ -2,6 +2,18 @@
 
 Juicebox-aware ownership model that ties contract ownership to a Juicebox project NFT or an address, with delegated access through `JBPermissions`.
 
+This is a variation on OpenZeppelin [`Ownable`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol) that adds:
+
+- The ability to transfer contract ownership to a Juicebox project instead of a specific address.
+- The ability to grant other addresses `onlyOwner` access using `JBPermissions`.
+- `JBPermissioned` modifiers with support for OpenZeppelin `Context` (enabling optional meta-transaction support).
+
+All features are backwards compatible with OpenZeppelin `Ownable`. This should be a drop-in replacement. Only use `JBOwnableOverrides` if you are overriding OpenZeppelin `Ownable` v4.7.0 or higher.
+
+Forked from [`jbx-protocol/juice-ownable`](https://github.com/jbx-protocol/juice-ownable).
+
+_If you have questions, take a look at the [core protocol contracts](https://github.com/Bananapus/nana-core) and the [documentation](https://docs.juicebox.money/) first, or reach out on [Discord](https://discord.com/invite/ErQYmth4dS)._
+
 ## Architecture
 
 | Contract | Description |
