@@ -19,6 +19,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
 
     error JBOwnableOverrides_InvalidNewOwner();
+    error JBOwnableOverrides_ProjectDoesNotExist();
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -119,8 +120,10 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         _setPermissionId(permissionId);
     }
 
-    /// @notice Transfers ownership of this contract to a new address (the `newOwner`).
-    /// @dev This can only be called by the current owner.
+    /// @notice Transfers ownership of this contract to a new address (the `newOwner`). Can only be called by the
+    /// current owner.
+    /// @dev The `permissionId` is reset to 0 on transfer to prevent permission clashes for the new owner.
+    /// The new owner must explicitly call `setPermissionId()` to configure owner-level permission delegation.
     /// @param newOwner The address to transfer ownership to.
     function transferOwnership(address newOwner) public virtual override {
         _checkOwner();
@@ -132,12 +135,19 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     }
 
     /// @notice Transfer ownership of this contract to a new Juicebox project.
-    /// @dev This can only be called by the current owner. The `projectId` must fit within a `uint88`.
+    /// @dev The `permissionId` is reset to 0 on transfer to prevent permission clashes for the new project owner.
+    /// The new owner must explicitly call `setPermissionId()` to configure owner-level permission delegation.
+    /// @dev The `projectId` must fit within a `uint88`.
     /// @param projectId The ID of the project to transfer ownership to.
     function transferOwnershipToProject(uint256 projectId) public virtual override {
         _checkOwner();
         if (projectId == 0 || projectId > type(uint88).max) {
             revert JBOwnableOverrides_InvalidNewOwner();
+        }
+
+        // Make sure the project exists to prevent permanent loss of contract control.
+        if (projectId > PROJECTS.count()) {
+            revert JBOwnableOverrides_ProjectDoesNotExist();
         }
 
         _transferOwnership(address(0), uint88(projectId));
