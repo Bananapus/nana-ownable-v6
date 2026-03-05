@@ -208,9 +208,14 @@ contract OwnableTest is Test {
     {
         // `CreateFor` won't work if the address is a contract that doesn't support `ERC721Receiver`.
         vm.assume(projectOwner != address(0) && callerAddress != projectOwner);
-        vm.assume(requiredPermissionId != 0);
+        requiredPermissionId = uint8(bound(uint256(requiredPermissionId), 1, 255));
 
-        vm.assume(permissionIdsToGrant.length < 5);
+        // Truncate array instead of rejecting to avoid exceeding max_test_rejects.
+        if (permissionIdsToGrant.length > 4) {
+            assembly {
+                mstore(permissionIdsToGrant, 4)
+            }
+        }
 
         // Create a project for the owner.
         uint256 _projectId = PROJECTS.createFor(projectOwner);
@@ -239,7 +244,7 @@ contract OwnableTest is Test {
         bool _shouldHavePermission;
         uint8[] memory _permissionIds = new uint8[](permissionIdsToGrant.length);
         for (uint256 i; i < permissionIdsToGrant.length; i++) {
-            vm.assume(permissionIdsToGrant[i] != 0);
+            permissionIdsToGrant[i] = uint8(bound(uint256(permissionIdsToGrant[i]), 1, 255));
             // Check if the permission we need is in the permissions to grant, including if it's ROOT.
             if (permissionIdsToGrant[i] == requiredPermissionId || permissionIdsToGrant[i] == 1) {
                 _shouldHavePermission = true;
@@ -281,8 +286,14 @@ contract OwnableTest is Test {
     {
         // `CreateFor` won't work if the address is a contract that doesn't support `ERC721Receiver`.
         vm.assume(projectOwner != address(0) && callerAddress != projectOwner);
-        vm.assume(requiredPermissionId != 0);
-        vm.assume(permissionIdsToGrant.length < 5);
+        requiredPermissionId = uint8(bound(uint256(requiredPermissionId), 1, 255));
+
+        // Truncate array instead of rejecting to avoid exceeding max_test_rejects.
+        if (permissionIdsToGrant.length > 4) {
+            assembly {
+                mstore(permissionIdsToGrant, 4)
+            }
+        }
 
         // Create a project for the owner.
         uint256 _projectId = PROJECTS.createFor(projectOwner);
@@ -310,7 +321,7 @@ contract OwnableTest is Test {
         bool _shouldHavePermission;
         uint8[] memory _permissionIds = new uint8[](permissionIdsToGrant.length);
         for (uint256 i; i < permissionIdsToGrant.length; i++) {
-            vm.assume(permissionIdsToGrant[i] != 0);
+            permissionIdsToGrant[i] = uint8(bound(uint256(permissionIdsToGrant[i]), 1, 255));
             // Check if the permission we need is in the permissions to grant, including if it's ROOT.
             if (permissionIdsToGrant[i] == requiredPermissionId || permissionIdsToGrant[i] == 1) {
                 _shouldHavePermission = true;
