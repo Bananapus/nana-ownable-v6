@@ -1,4 +1,4 @@
-# nana-ownable-v5
+# nana-ownable-v6
 
 Juicebox-aware ownership model that ties contract ownership to a Juicebox project NFT or an address, with delegated access through `JBPermissions`.
 

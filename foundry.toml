@@ -2,6 +2,8 @@
 solc = '0.8.23'
 evm_version = 'paris'                   # Required for L2s (Optimism, Arbitrum, etc.)
 optimizer_runs = 1000000000
+
+[fuzz]
 runs = 4096
 
 [fmt]
