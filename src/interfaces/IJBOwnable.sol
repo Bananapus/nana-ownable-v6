@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IJBProjects} from "@bananapus/core-v5/src/interfaces/IJBProjects.sol";
+import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
 interface IJBOwnable {
     event PermissionIdChanged(uint8 newId, address caller);
