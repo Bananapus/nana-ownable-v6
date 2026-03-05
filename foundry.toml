@@ -3,7 +3,6 @@ solc = '0.8.23'
 evm_version = 'paris'
 optimizer_runs = 1000000000
 libs = ["node_modules", "lib"]
-extra_output = ['storageLayout']
 fs_permissions = [{ access = "read-write", path = "./"}]
 
 [profile.ci_sizes]
