@@ -8,11 +8,11 @@ import {StdUtils} from "forge-std/StdUtils.sol";
 import {console} from "forge-std/console.sol";
 
 import {MockOwnable, JBOwnableOverrides} from "../mocks/MockOwnable.sol";
-import {IJBPermissions} from "@bananapus/core-v5/src/interfaces/IJBPermissions.sol";
-import {JBPermissions} from "@bananapus/core-v5/src/JBPermissions.sol";
-import {JBPermissionsData} from "@bananapus/core-v5/src/structs/JBPermissionsData.sol";
-import {IJBProjects} from "@bananapus/core-v5/src/interfaces/IJBProjects.sol";
-import {JBProjects} from "@bananapus/core-v5/src/JBProjects.sol";
+import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
+import {JBPermissions} from "@bananapus/core-v6/src/JBPermissions.sol";
+import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsData.sol";
+import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
+import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
 
 contract OwnableHandler is CommonBase, StdCheats, StdUtils {
     IJBProjects public immutable PROJECTS;
