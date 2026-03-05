@@ -180,13 +180,7 @@ contract OwnableTest is Test {
         assertEq(address(0), ownable.owner(), "Owner was not renounced.");
     }
 
-    function testJBOwnableOwnerCanRennounce(
-        address deployer,
-        address projectOwner
-    )
-        public
-        isNotContract(projectOwner)
-    {
+    function testJBOwnableOwnerCanRennounce(address deployer, address projectOwner) public isNotContract(projectOwner) {
         // `CreateFor` won't work if the address is a contract that doesn't support `ERC721Receiver`.
         vm.assume(projectOwner != address(0));
 
