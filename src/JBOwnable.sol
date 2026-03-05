@@ -2,8 +2,8 @@
 // Juicebox variation on OpenZeppelin Ownable
 pragma solidity ^0.8.23;
 
-import {IJBProjects} from "@bananapus/core-v5/src/interfaces/IJBProjects.sol";
-import {IJBPermissions} from "@bananapus/core-v5/src/interfaces/IJBPermissions.sol";
+import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
+import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
 
 import {JBOwnableOverrides} from "./JBOwnableOverrides.sol";
 
@@ -56,7 +56,8 @@ contract JBOwnable is JBOwnableOverrides {
     //*********************************************************************//
 
     /// @notice Either `newOwner` or `newProjectId` is non-zero or both are zero. But they can never both be non-zero.
-    /// @dev This function exists because some contracts will try to deploy contracts for a project before
+    /// @dev This function exists because some contracts need to deploy contracts for a project before the project's NFT
+    /// has been minted, so the transfer event resolves the project's current owner at emission time.
     function _emitTransferEvent(
         address previousOwner,
         address newOwner,

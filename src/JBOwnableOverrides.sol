@@ -2,9 +2,9 @@
 // Juicebox variation on OpenZeppelin Ownable
 pragma solidity ^0.8.23;
 
-import {JBPermissioned} from "@bananapus/core-v5/src/abstract/JBPermissioned.sol";
-import {IJBPermissions} from "@bananapus/core-v5/src/interfaces/IJBPermissions.sol";
-import {IJBProjects} from "@bananapus/core-v5/src/interfaces/IJBProjects.sol";
+import {JBPermissioned} from "@bananapus/core-v6/src/abstract/JBPermissioned.sol";
+import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
+import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 import {IJBOwnable} from "./interfaces/IJBOwnable.sol";
@@ -16,9 +16,10 @@ import {JBOwner} from "./structs/JBOwner.sol";
 abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
     // --------------------------- custom errors --------------------------//
-    //*********************************************************************//b
+    //*********************************************************************//
 
     error JBOwnableOverrides_InvalidNewOwner();
+    error JBOwnableOverrides_ProjectDoesNotExist();
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -45,7 +46,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// @dev The owner can give owner access to other addresses through the `permissions` contract.
     /// @param permissions A contract storing permissions.
     /// @param projects Mints ERC-721s that represent project ownership and transfers.
-    /// @param initialOwner The owner if the `intialProjectIdOwner` is 0 (until ownership is transferred).
+    /// @param initialOwner The owner if the `initialProjectIdOwner` is 0 (until ownership is transferred).
     /// @param initialProjectIdOwner The ID of the Juicebox project whose owner is this contract's owner (until
     /// ownership is transferred).
     constructor(
@@ -105,14 +106,14 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
 
     /// @notice Gives up ownership of this contract, making it impossible to call `onlyOwner` and `_checkOwner`
     /// functions.
-    /// @notice This can only be called by the current owner.
+    /// @dev This can only be called by the current owner.
     function renounceOwnership() public virtual override {
         _checkOwner();
         _transferOwnership(address(0), 0);
     }
 
     /// @notice Sets the permission ID the owner can use to give other addresses owner access.
-    /// @notice This can only be called by the current owner.
+    /// @dev This can only be called by the current owner.
     /// @param permissionId The permission ID to use for `onlyOwner`.
     function setPermissionId(uint8 permissionId) public virtual override {
         _checkOwner();
@@ -121,7 +122,8 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
 
     /// @notice Transfers ownership of this contract to a new address (the `newOwner`). Can only be called by the
     /// current owner.
-    /// @notice This can only be called by the current owner.
+    /// @dev The `permissionId` is reset to 0 on transfer to prevent permission clashes for the new owner.
+    /// The new owner must explicitly call `setPermissionId()` to configure owner-level permission delegation.
     /// @param newOwner The address to transfer ownership to.
     function transferOwnership(address newOwner) public virtual override {
         _checkOwner();
@@ -133,13 +135,19 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     }
 
     /// @notice Transfer ownership of this contract to a new Juicebox project.
-    /// @notice This can only be called by the current owner.
+    /// @dev The `permissionId` is reset to 0 on transfer to prevent permission clashes for the new project owner.
+    /// The new owner must explicitly call `setPermissionId()` to configure owner-level permission delegation.
     /// @dev The `projectId` must fit within a `uint88`.
     /// @param projectId The ID of the project to transfer ownership to.
     function transferOwnershipToProject(uint256 projectId) public virtual override {
         _checkOwner();
         if (projectId == 0 || projectId > type(uint88).max) {
             revert JBOwnableOverrides_InvalidNewOwner();
+        }
+
+        // Make sure the project exists to prevent permanent loss of contract control.
+        if (projectId > PROJECTS.count()) {
+            revert JBOwnableOverrides_ProjectDoesNotExist();
         }
 
         _transferOwnership(address(0), uint88(projectId));
@@ -150,7 +158,11 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
 
     /// @notice Either `newOwner` or `newProjectId` is non-zero or both are zero. But they can never both be non-zero.
-    /// @dev This function exists because some contracts will try to deploy contracts for a project before
+    /// @dev This function exists because some contracts need to deploy contracts for a project before the project's NFT
+    /// has been minted, so the transfer event resolves the project's current owner at emission time.
+    /// @param previousOwner The address of the previous owner.
+    /// @param newOwner The address of the new owner (zero if transferring to a project).
+    /// @param newProjectId The ID of the new owning project (zero if transferring to an address).
     function _emitTransferEvent(address previousOwner, address newOwner, uint88 newProjectId) internal virtual;
 
     /// @notice Sets the permission ID the owner can use to give other addresses owner access.

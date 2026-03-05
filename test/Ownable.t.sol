@@ -5,12 +5,12 @@ import "forge-std/Test.sol";
 import {MockOwnable} from "./mocks/MockOwnable.sol";
 import {JBOwnableOverrides} from "../src/JBOwnableOverrides.sol";
 
-import {JBPermissions} from "@bananapus/core-v5/src/JBPermissions.sol";
-import {JBPermissioned} from "@bananapus/core-v5/src/abstract/JBPermissioned.sol";
-import {JBProjects} from "@bananapus/core-v5/src/JBProjects.sol";
-import {IJBPermissions} from "@bananapus/core-v5/src/interfaces/IJBPermissions.sol";
-import {JBPermissionsData} from "@bananapus/core-v5/src/structs/JBPermissionsData.sol";
-import {IJBProjects} from "@bananapus/core-v5/src/interfaces/IJBProjects.sol";
+import {JBPermissions} from "@bananapus/core-v6/src/JBPermissions.sol";
+import {JBPermissioned} from "@bananapus/core-v6/src/abstract/JBPermissioned.sol";
+import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
+import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
+import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsData.sol";
+import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
 contract OwnableTest is Test {
     IJBProjects PROJECTS;
@@ -180,13 +180,7 @@ contract OwnableTest is Test {
         assertEq(address(0), ownable.owner(), "Owner was not renounced.");
     }
 
-    function testJBOwnableOwnerCanRennounce(
-        address deployer,
-        address projectOwner
-    )
-        public
-        isNotContract(projectOwner)
-    {
+    function testJBOwnableOwnerCanRennounce(address deployer, address projectOwner) public isNotContract(projectOwner) {
         // `CreateFor` won't work if the address is a contract that doesn't support `ERC721Receiver`.
         vm.assume(projectOwner != address(0));
 
@@ -214,9 +208,14 @@ contract OwnableTest is Test {
     {
         // `CreateFor` won't work if the address is a contract that doesn't support `ERC721Receiver`.
         vm.assume(projectOwner != address(0) && callerAddress != projectOwner);
-        vm.assume(requiredPermissionId != 0);
+        requiredPermissionId = uint8(bound(uint256(requiredPermissionId), 1, 255));
 
-        vm.assume(permissionIdsToGrant.length < 5);
+        // Truncate array instead of rejecting to avoid exceeding max_test_rejects.
+        if (permissionIdsToGrant.length > 4) {
+            assembly {
+                mstore(permissionIdsToGrant, 4)
+            }
+        }
 
         // Create a project for the owner.
         uint256 _projectId = PROJECTS.createFor(projectOwner);
@@ -245,7 +244,7 @@ contract OwnableTest is Test {
         bool _shouldHavePermission;
         uint8[] memory _permissionIds = new uint8[](permissionIdsToGrant.length);
         for (uint256 i; i < permissionIdsToGrant.length; i++) {
-            vm.assume(permissionIdsToGrant[i] != 0);
+            permissionIdsToGrant[i] = uint8(bound(uint256(permissionIdsToGrant[i]), 1, 255));
             // Check if the permission we need is in the permissions to grant, including if it's ROOT.
             if (permissionIdsToGrant[i] == requiredPermissionId || permissionIdsToGrant[i] == 1) {
                 _shouldHavePermission = true;
@@ -287,8 +286,14 @@ contract OwnableTest is Test {
     {
         // `CreateFor` won't work if the address is a contract that doesn't support `ERC721Receiver`.
         vm.assume(projectOwner != address(0) && callerAddress != projectOwner);
-        vm.assume(requiredPermissionId != 0);
-        vm.assume(permissionIdsToGrant.length < 5);
+        requiredPermissionId = uint8(bound(uint256(requiredPermissionId), 1, 255));
+
+        // Truncate array instead of rejecting to avoid exceeding max_test_rejects.
+        if (permissionIdsToGrant.length > 4) {
+            assembly {
+                mstore(permissionIdsToGrant, 4)
+            }
+        }
 
         // Create a project for the owner.
         uint256 _projectId = PROJECTS.createFor(projectOwner);
@@ -316,7 +321,7 @@ contract OwnableTest is Test {
         bool _shouldHavePermission;
         uint8[] memory _permissionIds = new uint8[](permissionIdsToGrant.length);
         for (uint256 i; i < permissionIdsToGrant.length; i++) {
-            vm.assume(permissionIdsToGrant[i] != 0);
+            permissionIdsToGrant[i] = uint8(bound(uint256(permissionIdsToGrant[i]), 1, 255));
             // Check if the permission we need is in the permissions to grant, including if it's ROOT.
             if (permissionIdsToGrant[i] == requiredPermissionId || permissionIdsToGrant[i] == 1) {
                 _shouldHavePermission = true;
