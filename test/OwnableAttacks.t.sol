@@ -169,11 +169,7 @@ contract OwnableAttacks is Test {
         vm.prank(attacker);
         PERMISSIONS.setPermissionsFor(
             attacker,
-            JBPermissionsData({
-                operator: attacker,
-                projectId: uint56(attackerProject),
-                permissionIds: rootPerms
-            })
+            JBPermissionsData({operator: attacker, projectId: uint56(attackerProject), permissionIds: rootPerms})
         );
 
         // Attacker tries to call protectedMethod — should still fail because
@@ -181,11 +177,7 @@ contract OwnableAttacks is Test {
         vm.prank(attacker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector,
-                alice,
-                attacker,
-                aliceProject,
-                42
+                JBPermissioned.JBPermissioned_Unauthorized.selector, alice, attacker, aliceProject, 42
             )
         );
         ownable.protectedMethod();

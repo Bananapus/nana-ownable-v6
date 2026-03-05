@@ -24,20 +24,17 @@ contract OwnableInvariantTests is Test {
     /// @notice Owner address and project ID are mutually exclusive: can't both be non-zero.
     function invariant_cantBelongToUserAndProject() public {
         (address owner, uint88 projectId,) = handler.OWNABLE().jbOwner();
-        assertTrue(
-            owner == address(0) || projectId == uint256(0),
-            "owner and projectId cannot both be non-zero"
-        );
+        assertTrue(owner == address(0) || projectId == uint256(0), "owner and projectId cannot both be non-zero");
     }
 
     /// @notice After renouncing, both owner and projectId must be zero.
     function invariant_renounceZerosOut() public {
-        if (handler.wasEverRenounced() && handler.renounceCount() > handler.transferCount() + handler.projectTransferCount()) {
+        if (
+            handler.wasEverRenounced()
+                && handler.renounceCount() > handler.transferCount() + handler.projectTransferCount()
+        ) {
             (address owner, uint88 projectId,) = handler.OWNABLE().jbOwner();
-            assertTrue(
-                owner == address(0) && projectId == 0,
-                "renounced state should have zero owner and projectId"
-            );
+            assertTrue(owner == address(0) && projectId == 0, "renounced state should have zero owner and projectId");
         }
     }
 
