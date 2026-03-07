@@ -1,4 +1,4 @@
-# nana-ownable-v6
+# Juicebox Ownable
 
 Ownership that follows the project, not a person. Transfer control of any contract to a Juicebox project NFT, and anyone the project owner delegates through `JBPermissions` can act as owner.
 

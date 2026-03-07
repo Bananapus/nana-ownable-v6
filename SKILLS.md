@@ -1,4 +1,4 @@
-# nana-ownable-v6
+# Juicebox Ownable
 
 ## Purpose
 
