@@ -1,6 +1,6 @@
 # nana-ownable-v6
 
-Juicebox-aware ownership model that ties contract ownership to a Juicebox project NFT or an address, with delegated access through `JBPermissions`.
+Ownership that follows the project, not a person. Transfer control of any contract to a Juicebox project NFT, and anyone the project owner delegates through `JBPermissions` can act as owner.
 
 This is a variation on OpenZeppelin [`Ownable`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol) that adds:
 
@@ -12,7 +12,7 @@ All features are backwards compatible with OpenZeppelin `Ownable`. This should b
 
 Forked from [`jbx-protocol/juice-ownable`](https://github.com/jbx-protocol/juice-ownable).
 
-_If you have questions, take a look at the [core protocol contracts](https://github.com/Bananapus/nana-core) and the [documentation](https://docs.juicebox.money/) first, or reach out on [Discord](https://discord.com/invite/ErQYmth4dS)._
+_If you have questions, take a look at the [core protocol contracts](https://github.com/Bananapus/nana-core-v6) and the [documentation](https://docs.juicebox.money/) first, or reach out on [Discord](https://discord.com/invite/ErQYmth4dS)._
 
 ## Architecture
 
