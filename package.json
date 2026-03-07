@@ -7,7 +7,7 @@
     "url": "git+https://github.com/Bananapus/nana-ownable-v6"
   },
   "dependencies": {
-    "@bananapus/core-v6": "^0.0.1",
+    "@bananapus/core-v6": "^0.0.5",
     "@openzeppelin/contracts": "^5.0.2"
   },
   "scripts": {
