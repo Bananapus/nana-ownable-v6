@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Juicebox variation on OpenZeppelin Ownable
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.26;
 
 import {JBPermissioned} from "@bananapus/core-v6/src/abstract/JBPermissioned.sol";
 import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
