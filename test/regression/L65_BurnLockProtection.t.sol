@@ -38,9 +38,7 @@ contract L65_BurnLockProtection is Test {
 
         // Simulate project NFT burn by making ownerOf revert for this projectId.
         vm.mockCallRevert(
-            address(PROJECTS),
-            abi.encodeWithSelector(IERC721.ownerOf.selector, projectId),
-            "ERC721: invalid token ID"
+            address(PROJECTS), abi.encodeWithSelector(IERC721.ownerOf.selector, projectId), "ERC721: invalid token ID"
         );
 
         // After burn, owner() should return address(0) — NOT revert.
@@ -61,9 +59,7 @@ contract L65_BurnLockProtection is Test {
 
         // Simulate project NFT burn.
         vm.mockCallRevert(
-            address(PROJECTS),
-            abi.encodeWithSelector(IERC721.ownerOf.selector, projectId),
-            "ERC721: invalid token ID"
+            address(PROJECTS), abi.encodeWithSelector(IERC721.ownerOf.selector, projectId), "ERC721: invalid token ID"
         );
 
         // After burn, nobody can call protected methods — but the revert is graceful

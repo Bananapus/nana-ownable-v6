@@ -118,7 +118,9 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             }
         }
 
-        _requirePermissionFrom({account: resolvedOwner, projectId: ownerInfo.projectId, permissionId: ownerInfo.permissionId});
+        _requirePermissionFrom({
+            account: resolvedOwner, projectId: ownerInfo.projectId, permissionId: ownerInfo.permissionId
+        });
     }
 
     //*********************************************************************//
