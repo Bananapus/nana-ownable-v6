@@ -75,6 +75,11 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
 
     /// @notice Returns the owner's address based on this contract's `JBOwner`.
+    /// @dev If `projectId` is non-zero, resolves via `PROJECTS.ownerOf()`. If that call reverts (e.g., because the
+    /// project NFT was burned or invalidated), returns `address(0)` — effectively treating the contract as renounced.
+    /// @dev **Assumption:** `JBProjects` V6 has no burn function, so this scenario cannot occur under normal
+    /// conditions. The try-catch is a defensive measure against hypothetical future changes to `JBProjects` or
+    /// unexpected ERC-721 behavior.
     function owner() public view virtual returns (address) {
         JBOwner memory ownerInfo = jbOwner;
 
@@ -82,7 +87,13 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             return ownerInfo.owner;
         }
 
-        return PROJECTS.ownerOf(ownerInfo.projectId);
+        // Use try-catch to gracefully handle the case where the project NFT no longer exists.
+        // If ownerOf reverts, the contract is effectively renounced (returns address(0)).
+        try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
+            return projectOwner;
+        } catch {
+            return address(0);
+        }
     }
 
     //*********************************************************************//
@@ -90,13 +101,25 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
 
     /// @notice Reverts if the sender is not the owner.
+    /// @dev If `projectId` is non-zero and `PROJECTS.ownerOf()` reverts (e.g., burned NFT), the resolved owner is
+    /// `address(0)`, causing all `_checkOwner` calls to revert — equivalent to a renounced contract.
     function _checkOwner() internal view virtual {
         JBOwner memory ownerInfo = jbOwner;
 
+        address resolvedOwner;
+        if (ownerInfo.projectId == 0) {
+            resolvedOwner = ownerInfo.owner;
+        } else {
+            // Use try-catch to gracefully handle the case where the project NFT no longer exists.
+            try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
+                resolvedOwner = projectOwner;
+            } catch {
+                resolvedOwner = address(0);
+            }
+        }
+
         _requirePermissionFrom({
-            account: ownerInfo.projectId == 0 ? ownerInfo.owner : PROJECTS.ownerOf(ownerInfo.projectId),
-            projectId: ownerInfo.projectId,
-            permissionId: ownerInfo.permissionId
+            account: resolvedOwner, projectId: ownerInfo.projectId, permissionId: ownerInfo.permissionId
         });
     }
 
@@ -192,8 +215,17 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         }
         // Load the owner information from storage.
         JBOwner memory ownerInfo = jbOwner;
-        // Get the address of the old owner.
-        address oldOwner = ownerInfo.projectId == 0 ? ownerInfo.owner : PROJECTS.ownerOf(ownerInfo.projectId);
+        // Get the address of the old owner. Use try-catch for project-based ownership in case the NFT was burned.
+        address oldOwner;
+        if (ownerInfo.projectId == 0) {
+            oldOwner = ownerInfo.owner;
+        } else {
+            try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
+                oldOwner = projectOwner;
+            } catch {
+                oldOwner = address(0);
+            }
+        }
         // Update the stored owner information to the new owner and reset the `permissionId`.
         // This is to prevent permissions clashes for the new user/owner.
         jbOwner = JBOwner({owner: newOwner, projectId: projectId, permissionId: 0});
