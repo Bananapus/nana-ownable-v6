@@ -20,6 +20,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
 
     error JBOwnableOverrides_InvalidNewOwner();
     error JBOwnableOverrides_ProjectDoesNotExist();
+    error JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner();
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -58,6 +59,13 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         JBPermissioned(permissions)
     {
         PROJECTS = projects;
+
+        // If using project-based ownership, the PROJECTS contract must be provided.
+        // Deploying with projects=address(0) and a non-zero projectId would permanently disable
+        // ownership resolution, as all ownerOf() calls would revert on the zero address.
+        if (initialProjectIdOwner != 0 && address(projects) == address(0)) {
+            revert JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner();
+        }
 
         // We force the inheriting contract to set an owner, as there is a low chance someone will use `JBOwnable` to
         // create an unowned contract.
