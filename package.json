@@ -1,17 +1,20 @@
 {
   "name": "@bananapus/ownable-v6",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bananapus/nana-ownable-v6"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
-    "@bananapus/core-v6": "^0.0.5",
+    "@bananapus/core-v6": "^0.0.9",
     "@openzeppelin/contracts": "^5.0.2"
   },
   "scripts": {
     "test": "forge test",
-    "coverage:integration": "forge coverage --match-path \"./src/*.sol\" --report lcov --report summary"
+    "coverage": "forge coverage --match-path \"./src/*.sol\" --report lcov --report summary"
   }
 }
