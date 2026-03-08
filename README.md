@@ -58,13 +58,14 @@ The `permissionId` resets to 0 on every ownership transfer to prevent permission
 |-------|-----------|
 | `JBOwnableOverrides_InvalidNewOwner()` | Constructor receives both zero owner and zero projectId; `transferOwnership` receives zero address; `transferOwnershipToProject` receives zero or overflow projectId; `_transferOwnership` receives both non-zero owner and non-zero projectId. |
 | `JBOwnableOverrides_ProjectDoesNotExist()` | `transferOwnershipToProject` receives a projectId greater than `PROJECTS.count()`. |
+| `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` | Constructor receives a non-zero `initialProjectIdOwner` with `projects` set to `address(0)`. |
 
 ## How Ownership Resolution Works
 
 When `_checkOwner()` is called (by the `onlyOwner` modifier), it:
 
 1. Reads the `JBOwner` struct from storage.
-2. Resolves the owner address: if `projectId != 0`, looks up `PROJECTS.ownerOf(projectId)`; otherwise uses the stored `owner` address.
+2. Resolves the owner address: if `projectId != 0`, calls `PROJECTS.ownerOf(projectId)` via try-catch (returns `address(0)` if the call reverts, e.g., burned NFT); otherwise uses the stored `owner` address.
 3. Calls `_requirePermissionFrom(account, projectId, permissionId)` from `JBPermissioned`, which passes if the caller is:
    - The resolved owner address, OR
    - An address granted the configured `permissionId` on the relevant project via `JBPermissions`, OR

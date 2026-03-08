@@ -27,7 +27,7 @@ JBOwnable
 
 | Function | Contract | What it does |
 |----------|----------|--------------|
-| `owner()` | `JBOwnableOverrides` | Returns the current owner address. If `projectId != 0`, returns `PROJECTS.ownerOf(projectId)`. Otherwise returns `jbOwner.owner`. |
+| `owner()` | `JBOwnableOverrides` | Returns the current owner address. If `projectId != 0`, calls `PROJECTS.ownerOf(projectId)` via try-catch -- returns the project NFT holder on success, or `address(0)` if the call reverts (e.g., burned NFT). Otherwise returns `jbOwner.owner`. |
 | `transferOwnership(address newOwner)` | `JBOwnableOverrides` | Transfers ownership to a new address. Reverts if `newOwner` is `address(0)`. Resets `permissionId` to 0. |
 | `transferOwnershipToProject(uint256 projectId)` | `JBOwnableOverrides` | Transfers ownership to a Juicebox project. The NFT holder becomes the owner. Validates: `projectId != 0`, fits in `uint88`, and `projectId <= PROJECTS.count()`. Resets `permissionId` to 0. |
 | `renounceOwnership()` | `JBOwnableOverrides` | Permanently gives up ownership. Sets both `owner` and `projectId` to zero. Irreversible -- no one can call `onlyOwner` functions afterward. |
@@ -69,6 +69,7 @@ JBOwnable
 |-------|------|
 | `JBOwnableOverrides_InvalidNewOwner()` | Constructor gets both zero owner and zero projectId. `transferOwnership(address(0))`. `transferOwnershipToProject(0)` or `transferOwnershipToProject(id > type(uint88).max)`. `_transferOwnership` called with both non-zero owner and non-zero projectId. |
 | `JBOwnableOverrides_ProjectDoesNotExist()` | `transferOwnershipToProject(id)` where `id > PROJECTS.count()`. |
+| `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` | Constructor receives a non-zero `initialProjectIdOwner` with `projects` set to `address(0)`. |
 
 ## Integration Points
 
@@ -88,7 +89,8 @@ JBOwnable
 - **`renounceOwnership()` is irreversible.** After renouncing, `owner()` returns `address(0)`, and all `onlyOwner` functions permanently revert. There is no recovery mechanism.
 - **`projectId` is `uint88`.** Project IDs above `type(uint88).max` (309,485,009,821,345,068,724,781,055) are rejected by `transferOwnershipToProject`. This constraint enables the `JBOwner` struct to fit in a single storage slot.
 - **`transferOwnershipToProject` checks existence.** It compares the project ID against `PROJECTS.count()` and reverts with `JBOwnableOverrides_ProjectDoesNotExist` if the project does not exist, preventing permanent loss of contract control.
-- **`owner()` makes an external call in project mode.** When `projectId != 0`, `owner()` calls `PROJECTS.ownerOf(projectId)`, which is an external call. This is relevant for gas-sensitive contexts.
+- **`owner()` makes an external call in project mode.** When `projectId != 0`, `owner()` calls `PROJECTS.ownerOf(projectId)`, which is an external call. This is relevant for gas-sensitive contexts. If the call reverts (e.g., the project NFT was burned), `owner()` returns `address(0)` and the contract degrades to a renounced state.
+- **Constructor rejects zero-address PROJECTS with project ownership.** Deploying with `projects = address(0)` and a non-zero `initialProjectIdOwner` reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner`, preventing permanently broken ownership resolution.
 - **No ERC2771 support.** Despite inheriting `Context`, `JBOwnable` uses plain `Context._msgSender()` (which returns `msg.sender`), not `ERC2771Context`. A trusted forwarder appending a sender address to calldata has no effect on ownership checks.
 
 ## Example: Inherit JBOwnable
