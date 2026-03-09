@@ -15,12 +15,12 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@v4
         with:
-          node-version: latest
+          node-version: 22.4.x
       - name: Install npm dependencies
         run: npm install --omit=dev
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
       - name: Run tests
-        run: forge snapshot --fail-fast --summary --detailed
+        run: forge test --fail-fast --summary --detailed --skip "*/script/**"
       - name: Check contract sizes
-        run: forge build --sizes --skip "*/test/**" --skip "*/script/**"
+        run: FOUNDRY_PROFILE=ci_sizes forge build --sizes --skip "*/test/**" --skip "*/script/**" --skip SphinxUtils

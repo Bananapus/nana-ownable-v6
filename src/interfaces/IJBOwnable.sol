@@ -3,9 +3,18 @@ pragma solidity ^0.8.0;
 
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
+/// @notice Provides Juicebox-aware ownership with support for project-based and address-based owners.
 interface IJBOwnable {
-    event PermissionIdChanged(uint8 newId, address caller);
+    /// @notice Emitted when ownership is transferred to a new owner.
+    /// @param previousOwner The address of the previous owner.
+    /// @param newOwner The address of the new owner.
+    /// @param caller The address that initiated the transfer.
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner, address caller);
+
+    /// @notice Emitted when the permission ID used for owner access is changed.
+    /// @param newId The new permission ID.
+    /// @param caller The address that changed the permission ID.
+    event PermissionIdChanged(uint8 newId, address caller);
 
     /// @notice The contract that mints ERC-721s representing project ownership.
     /// @return projects The `IJBProjects` contract.

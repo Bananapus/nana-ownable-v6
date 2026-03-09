@@ -15,7 +15,7 @@ import {JBOwner} from "./structs/JBOwner.sol";
 /// `JBPermissions`.
 abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
-    // --------------------------- custom errors --------------------------//
+    // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
     error JBOwnableOverrides_InvalidNewOwner();
