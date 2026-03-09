@@ -12,7 +12,7 @@ import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /// @title L65_BurnLockProtection
-/// @notice Regression test for L-65: Verifies that if a project NFT is burned/invalidated,
+/// @notice Verifies that if a project NFT is burned/invalidated,
 ///         owner() returns address(0) and _checkOwner() reverts gracefully instead of
 ///         permanently locking the contract with an unrecoverable revert.
 contract L65_BurnLockProtection is Test {

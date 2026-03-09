@@ -11,7 +11,7 @@ import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.s
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
 /// @title L66_ZeroAddressValidation
-/// @notice Regression test for L-66: Verifies that deploying with a zero-address PROJECTS
+/// @notice Verifies that deploying with a zero-address PROJECTS
 ///         contract and a non-zero projectId reverts at construction time, preventing
 ///         permanently broken project-based ownership.
 contract L66_ZeroAddressValidation is Test {
