@@ -45,6 +45,7 @@ contract OwnableEdgeCases is Test {
     // =========================================================================
     function test_multiHopNFTTransfer_ownerFollows() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         assertEq(ownable.owner(), alice);
@@ -88,6 +89,7 @@ contract OwnableEdgeCases is Test {
         uint256 projectA = PROJECTS.createFor(alice);
         uint256 projectB = PROJECTS.createFor(bob);
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectA));
         assertEq(ownable.owner(), alice);
 
@@ -137,6 +139,7 @@ contract OwnableEdgeCases is Test {
         // Verify jbOwner struct is correct (projectId set, owner zeroed).
         (address storedOwner, uint88 storedProjectId, uint8 storedPermId) = ownable.jbOwner();
         assertEq(storedOwner, address(0), "owner field should be zero in project mode");
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(storedProjectId, uint88(projectB), "projectId should be projectB");
         assertEq(storedPermId, 0, "permissionId should be 0");
     }
@@ -147,6 +150,7 @@ contract OwnableEdgeCases is Test {
     function test_permissionIdLifecycle() public {
         uint256 projectA = PROJECTS.createFor(alice);
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectA));
 
         // Set permissionId to 42.
@@ -224,6 +228,7 @@ contract OwnableEdgeCases is Test {
     // =========================================================================
     function test_delegatedAccess_lostAfterNFTTransfer() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         // Set permissionId so delegation is possible.
@@ -235,6 +240,7 @@ contract OwnableEdgeCases is Test {
         permIds[0] = 42;
         vm.prank(alice);
         PERMISSIONS.setPermissionsFor(
+            // forge-lint: disable-next-line(unsafe-typecast)
             alice, JBPermissionsData({operator: charlie, projectId: uint56(projectId), permissionIds: permIds})
         );
 
@@ -302,6 +308,7 @@ contract OwnableEdgeCases is Test {
         // Verify jbOwner struct.
         (address storedOwner, uint88 storedProjectId,) = ownable.jbOwner();
         assertEq(storedOwner, address(0), "stored owner should be zero");
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(storedProjectId, uint88(projectId), "stored projectId should match");
     }
 

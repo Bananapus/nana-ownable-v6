@@ -59,6 +59,7 @@ contract OwnableTest is Test {
         uint256 projectId = PROJECTS.createFor(projectOwner);
 
         // Create the `Ownable` contract.
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         // Make sure the deployer owns it.
@@ -89,6 +90,7 @@ contract OwnableTest is Test {
         uint256 _projectId = PROJECTS.createFor(projectOwner);
 
         // Create the `Ownable` contract.
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
 
         // Make sure the project owner owns it.
@@ -148,6 +150,7 @@ contract OwnableTest is Test {
         uint256 _projectId = PROJECTS.createFor(projectOwner);
 
         // Create the `Ownable` contract.
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
 
         // Make sure the project owner owns it.
@@ -189,6 +192,7 @@ contract OwnableTest is Test {
 
         // Create the `Ownable` contract.
         vm.prank(deployer);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
 
         // Renounce the ownership.
@@ -221,6 +225,7 @@ contract OwnableTest is Test {
         uint256 _projectId = PROJECTS.createFor(projectOwner);
 
         // Create the `Ownable` contract.
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
 
         // Set the required permission.
@@ -256,6 +261,7 @@ contract OwnableTest is Test {
         vm.prank(projectOwner);
         PERMISSIONS.setPermissionsFor(
             projectOwner,
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: callerAddress, projectId: uint56(_projectId), permissionIds: _permissionIds})
         );
 
@@ -299,6 +305,7 @@ contract OwnableTest is Test {
         uint256 _projectId = PROJECTS.createFor(projectOwner);
 
         // Create the `Ownable` contract.
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
 
         // Set the permission that is required.
@@ -333,6 +340,7 @@ contract OwnableTest is Test {
         vm.prank(projectOwner);
         PERMISSIONS.setPermissionsFor(
             projectOwner,
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: callerAddress, projectId: uint56(_projectId), permissionIds: _permissionIds})
         );
 
@@ -362,6 +370,7 @@ contract OwnableTest is Test {
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
 
         // Create the `Ownable` contract.
+        // forge-lint: disable-next-line(unsafe-typecast)
         new MockOwnable(PROJECTS, PERMISSIONS, address(owner), uint88(_projectId));
     }
 

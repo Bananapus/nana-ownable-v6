@@ -54,6 +54,7 @@ contract L66_ZeroAddressValidation is Test {
     /// @notice Normal deployment with valid PROJECTS contract and projectId succeeds.
     function test_validProjectsWithProjectId_succeeds() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
         assertEq(ownable.owner(), alice, "Owner should be alice via project NFT");
     }

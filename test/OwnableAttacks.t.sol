@@ -44,6 +44,7 @@ contract OwnableAttacks is Test {
         uint256 projectId = PROJECTS.createFor(alice);
 
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
+        // forge-lint: disable-next-line(unsafe-typecast)
         new MockOwnable(PROJECTS, PERMISSIONS, bob, uint88(projectId));
     }
 
@@ -83,6 +84,7 @@ contract OwnableAttacks is Test {
     ///         This prevents stale permission delegation.
     function test_permissionIdResetOnTransfer() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         // Set permission ID.
@@ -106,6 +108,7 @@ contract OwnableAttacks is Test {
     /// @notice After transferring project NFT, old owner should lose access.
     function test_staleOwner_afterNFTTransfer() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         // Alice is current owner.
@@ -156,6 +159,7 @@ contract OwnableAttacks is Test {
         uint256 attackerProject = PROJECTS.createFor(attacker);
 
         // Ownable is owned by alice's project.
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(aliceProject));
 
         // Set permission ID so delegated access is possible.
@@ -169,6 +173,7 @@ contract OwnableAttacks is Test {
         vm.prank(attacker);
         PERMISSIONS.setPermissionsFor(
             attacker,
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: attacker, projectId: uint56(attackerProject), permissionIds: rootPerms})
         );
 

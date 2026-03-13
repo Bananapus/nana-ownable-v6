@@ -181,6 +181,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             revert JBOwnableOverrides_ProjectDoesNotExist();
         }
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         _transferOwnership({newOwner: address(0), projectId: uint88(projectId)});
     }
 

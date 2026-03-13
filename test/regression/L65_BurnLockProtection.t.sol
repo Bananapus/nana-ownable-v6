@@ -31,6 +31,7 @@ contract L65_BurnLockProtection is Test {
     ///         return address(0) instead of reverting — contract degrades to "renounced" state.
     function test_burnedProjectNFT_ownerReturnsZero() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         // Verify normal operation first.
@@ -51,6 +52,7 @@ contract L65_BurnLockProtection is Test {
     ///         behave as if ownership was renounced.
     function test_burnedProjectNFT_checkOwnerRevertsGracefully() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         // Alice can call the protected method before burn.
@@ -94,6 +96,7 @@ contract L65_BurnLockProtection is Test {
     /// @notice Normal project-based ownership still works correctly after the fix.
     function test_normalProjectOwnership_stillWorks() public {
         uint256 projectId = PROJECTS.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
 
         assertEq(ownable.owner(), alice);
