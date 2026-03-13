@@ -10,11 +10,11 @@ import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
 import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
-/// @title L66_ZeroAddressValidation
+/// @title ZeroAddressValidation
 /// @notice Verifies that deploying with a zero-address PROJECTS
 ///         contract and a non-zero projectId reverts at construction time, preventing
 ///         permanently broken project-based ownership.
-contract L66_ZeroAddressValidation is Test {
+contract ZeroAddressValidation is Test {
     IJBProjects PROJECTS;
     IJBPermissions PERMISSIONS;
 
