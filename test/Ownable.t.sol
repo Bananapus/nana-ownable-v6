@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MockOwnable} from "./mocks/MockOwnable.sol";
 import {JBOwnableOverrides} from "../src/JBOwnableOverrides.sol";
 
@@ -13,8 +13,8 @@ import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsDat
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
 contract OwnableTest is Test {
-    IJBProjects PROJECTS;
-    IJBPermissions PERMISSIONS;
+    IJBProjects projects;
+    IJBPermissions permissions;
 
     modifier isNotContract(address a) {
         uint256 size;
@@ -27,9 +27,9 @@ contract OwnableTest is Test {
 
     function setUp() public {
         // Deploy the permissions contract.
-        PERMISSIONS = new JBPermissions(address(0));
+        permissions = new JBPermissions(address(0));
         // Deploy the projects contract.
-        PROJECTS = new JBProjects(address(123), address(0), address(0));
+        projects = new JBProjects(address(123), address(0), address(0));
     }
 
     function testDeployerDoesNotBecomeOwner(address deployer, address owner) public isNotContract(owner) {
@@ -37,7 +37,7 @@ contract OwnableTest is Test {
         vm.assume(owner != address(0));
 
         vm.prank(deployer);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, owner, uint88(0));
+        MockOwnable ownable = new MockOwnable(projects, permissions, owner, uint88(0));
 
         assertEq(owner, ownable.owner(), "Deployer did not become the owner.");
     }
@@ -56,18 +56,18 @@ contract OwnableTest is Test {
         vm.assume(newProjectOwner != address(0));
 
         // Create a project for the owner.
-        uint256 projectId = PROJECTS.createFor(projectOwner);
+        uint256 projectId = projects.createFor(projectOwner);
 
         // Create the `Ownable` contract.
         // forge-lint: disable-next-line(unsafe-typecast)
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Make sure the deployer owns it.
         assertEq(projectOwner, ownable.owner(), "Deployer is not the owner.");
 
         // Transfer the project's ownership.
         vm.prank(projectOwner);
-        PROJECTS.transferFrom(projectOwner, newProjectOwner, projectId);
+        projects.transferFrom(projectOwner, newProjectOwner, projectId);
 
         // Make sure the `Ownable` contract has also been transferred to the new project owner.
         assertEq(newProjectOwner, ownable.owner(), "Ownable did not follow the Project owner.");
@@ -87,11 +87,11 @@ contract OwnableTest is Test {
         vm.assume(projectOwner != address(0));
 
         // Create a project for the owner.
-        uint256 _projectId = PROJECTS.createFor(projectOwner);
+        uint256 _projectId = projects.createFor(projectOwner);
 
         // Create the `Ownable` contract.
         // forge-lint: disable-next-line(unsafe-typecast)
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(_projectId));
 
         // Make sure the project owner owns it.
         assertEq(projectOwner, ownable.owner(), "Deployer is not the owner.");
@@ -102,7 +102,7 @@ contract OwnableTest is Test {
         // Make sure it was transferred to the new owner.
         assertEq(newOwnableOwner, ownable.owner());
         // Sanity check to make sure it only the `Ownable` changed, and that the project did not.
-        assertEq(PROJECTS.ownerOf(_projectId), projectOwner);
+        assertEq(projects.ownerOf(_projectId), projectOwner);
     }
 
     function testCantTransferToProjectZero(address owner) public {
@@ -110,7 +110,7 @@ contract OwnableTest is Test {
         vm.startPrank(owner);
 
         // Create the `Ownable` contract.
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, owner, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, owner, 0);
 
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
 
@@ -124,7 +124,7 @@ contract OwnableTest is Test {
         vm.startPrank(owner);
 
         // Create the `Ownable` contract.
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, owner, uint88(0));
+        MockOwnable ownable = new MockOwnable(projects, permissions, owner, uint88(0));
 
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
 
@@ -147,19 +147,19 @@ contract OwnableTest is Test {
         vm.assume(newProjectOwner != address(0));
 
         // Create a project for the owner.
-        uint256 _projectId = PROJECTS.createFor(projectOwner);
+        uint256 _projectId = projects.createFor(projectOwner);
 
         // Create the `Ownable` contract.
         // forge-lint: disable-next-line(unsafe-typecast)
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(_projectId));
 
         // Make sure the project owner owns it.
         assertEq(projectOwner, ownable.owner(), "Deployer is not the owner.");
 
         // Transfer the project ownership.
         vm.prank(projectOwner);
-        PROJECTS.transferFrom(projectOwner, newProjectOwner, _projectId);
-        assertEq(PROJECTS.ownerOf(_projectId), newProjectOwner);
+        projects.transferFrom(projectOwner, newProjectOwner, _projectId);
+        assertEq(projects.ownerOf(_projectId), newProjectOwner);
 
         // Make sure the `Ownable` contract has also been transferred to the new project owner.
         assertEq(newProjectOwner, ownable.owner());
@@ -170,7 +170,7 @@ contract OwnableTest is Test {
         vm.assume(deployer != owner);
 
         // Create the `Ownable` contract.
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, owner, uint88(0));
+        MockOwnable ownable = new MockOwnable(projects, permissions, owner, uint88(0));
 
         // Transfer ownership to the project owner.
         vm.prank(owner);
@@ -188,12 +188,12 @@ contract OwnableTest is Test {
         vm.assume(projectOwner != address(0));
 
         // Create a project for the owner.
-        uint256 _projectId = PROJECTS.createFor(projectOwner);
+        uint256 _projectId = projects.createFor(projectOwner);
 
         // Create the `Ownable` contract.
         vm.prank(deployer);
         // forge-lint: disable-next-line(unsafe-typecast)
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(_projectId));
 
         // Renounce the ownership.
         vm.prank(projectOwner);
@@ -222,11 +222,11 @@ contract OwnableTest is Test {
         }
 
         // Create a project for the owner.
-        uint256 _projectId = PROJECTS.createFor(projectOwner);
+        uint256 _projectId = projects.createFor(projectOwner);
 
         // Create the `Ownable` contract.
         // forge-lint: disable-next-line(unsafe-typecast)
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(_projectId));
 
         // Set the required permission.
         vm.prank(projectOwner);
@@ -259,7 +259,7 @@ contract OwnableTest is Test {
 
         // The owner gives permission to the caller.
         vm.prank(projectOwner);
-        PERMISSIONS.setPermissionsFor(
+        permissions.setPermissionsFor(
             projectOwner,
             // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: callerAddress, projectId: uint56(_projectId), permissionIds: _permissionIds})
@@ -302,11 +302,11 @@ contract OwnableTest is Test {
         }
 
         // Create a project for the owner.
-        uint256 _projectId = PROJECTS.createFor(projectOwner);
+        uint256 _projectId = projects.createFor(projectOwner);
 
         // Create the `Ownable` contract.
         // forge-lint: disable-next-line(unsafe-typecast)
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(_projectId));
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(_projectId));
 
         // Set the permission that is required.
         ownable.setPermission(requiredPermissionId);
@@ -338,7 +338,7 @@ contract OwnableTest is Test {
 
         // The owner gives permission to the caller.
         vm.prank(projectOwner);
-        PERMISSIONS.setPermissionsFor(
+        permissions.setPermissionsFor(
             projectOwner,
             // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: callerAddress, projectId: uint56(_projectId), permissionIds: _permissionIds})
@@ -364,20 +364,20 @@ contract OwnableTest is Test {
         vm.assume(owner != address(0) && projectOwner != address(0));
 
         // Create a project for the owner.
-        uint256 _projectId = PROJECTS.createFor(projectOwner);
+        uint256 _projectId = projects.createFor(projectOwner);
 
         // Should revert because we set both a owner and a projectOwner
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
 
         // Create the `Ownable` contract.
         // forge-lint: disable-next-line(unsafe-typecast)
-        new MockOwnable(PROJECTS, PERMISSIONS, address(owner), uint88(_projectId));
+        new MockOwnable(projects, permissions, address(owner), uint88(_projectId));
     }
 
     function testCantInitializeAsRenounced() public {
         // Should revert because we set both a owner and a projectOwner
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
         // Create the `Ownable` contract.
-        new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(0));
+        new MockOwnable(projects, permissions, address(0), uint88(0));
     }
 }
