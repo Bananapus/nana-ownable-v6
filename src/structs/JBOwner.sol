@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 /// `owner` address has owner access.
 /// @custom:member permissionId The permission ID which corresponds to owner access. See `JBPermissions` in `nana-core`
 /// and `nana-permission-ids`.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBOwner {
     address owner;
     uint88 projectId;

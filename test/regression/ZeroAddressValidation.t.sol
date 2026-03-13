@@ -10,19 +10,19 @@ import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
 import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
-/// @title L66_ZeroAddressValidation
-/// @notice Verifies that deploying with a zero-address PROJECTS
+/// @title ZeroAddressValidation
+/// @notice Verifies that deploying with a zero-address projects
 ///         contract and a non-zero projectId reverts at construction time, preventing
 ///         permanently broken project-based ownership.
-contract L66_ZeroAddressValidation is Test {
-    IJBProjects PROJECTS;
-    IJBPermissions PERMISSIONS;
+contract ZeroAddressValidation is Test {
+    IJBProjects projects;
+    IJBPermissions permissions;
 
     address alice = makeAddr("alice");
 
     function setUp() public {
-        PERMISSIONS = new JBPermissions(address(0));
-        PROJECTS = new JBProjects(address(123), address(0), address(0));
+        permissions = new JBPermissions(address(0));
+        projects = new JBProjects(address(123), address(0), address(0));
     }
 
     /// @notice Deploying with projects=address(0) and non-zero projectId must revert.
@@ -30,7 +30,7 @@ contract L66_ZeroAddressValidation is Test {
         vm.expectRevert(
             abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner.selector)
         );
-        new MockOwnable(IJBProjects(address(0)), PERMISSIONS, address(0), uint88(1));
+        new MockOwnable(IJBProjects(address(0)), permissions, address(0), uint88(1));
     }
 
     /// @notice Fuzz: any non-zero projectId with projects=address(0) must revert.
@@ -40,27 +40,28 @@ contract L66_ZeroAddressValidation is Test {
         vm.expectRevert(
             abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner.selector)
         );
-        new MockOwnable(IJBProjects(address(0)), PERMISSIONS, address(0), projectId);
+        new MockOwnable(IJBProjects(address(0)), permissions, address(0), projectId);
     }
 
     /// @notice Deploying with projects=address(0) and projectId=0 (address-based ownership)
     ///         should NOT revert for this error — it's valid as long as initialOwner != address(0).
     function test_zeroProjectsWithAddressOwnership_succeeds() public {
         // This is valid: address-based ownership with projects=address(0).
-        MockOwnable ownable = new MockOwnable(IJBProjects(address(0)), PERMISSIONS, alice, uint88(0));
+        MockOwnable ownable = new MockOwnable(IJBProjects(address(0)), permissions, alice, uint88(0));
         assertEq(ownable.owner(), alice, "Owner should be alice with address-based ownership");
     }
 
-    /// @notice Normal deployment with valid PROJECTS contract and projectId succeeds.
+    /// @notice Normal deployment with valid projects contract and projectId succeeds.
     function test_validProjectsWithProjectId_succeeds() public {
-        uint256 projectId = PROJECTS.createFor(alice);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
+        uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
         assertEq(ownable.owner(), alice, "Owner should be alice via project NFT");
     }
 
     /// @notice The existing check for both zero owner and zero projectId is still enforced.
     function test_bothZero_stillReverts() public {
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
-        new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(0));
+        new MockOwnable(projects, permissions, address(0), uint88(0));
     }
 }

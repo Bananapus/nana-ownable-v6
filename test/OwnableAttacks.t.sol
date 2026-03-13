@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MockOwnable} from "./mocks/MockOwnable.sol";
 import {JBOwnableOverrides} from "../src/JBOwnableOverrides.sol";
 
@@ -16,8 +16,8 @@ import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsDat
 /// @notice Adversarial security tests for JBOwnable covering edge cases
 ///         around dual ownership, permission semantics, and renounced contracts.
 contract OwnableAttacks is Test {
-    IJBProjects PROJECTS;
-    IJBPermissions PERMISSIONS;
+    IJBProjects projects;
+    IJBPermissions permissions;
 
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
@@ -33,25 +33,26 @@ contract OwnableAttacks is Test {
     }
 
     function setUp() public {
-        PERMISSIONS = new JBPermissions(address(0));
-        PROJECTS = new JBProjects(address(123), address(0), address(0));
+        permissions = new JBPermissions(address(0));
+        projects = new JBProjects(address(123), address(0), address(0));
     }
 
     // =========================================================================
     // Test 1: Constructor rejects both owner AND projectId set
     // =========================================================================
     function test_bothOwnerAndProjectId_constructorReverts() public {
-        uint256 projectId = PROJECTS.createFor(alice);
+        uint256 projectId = projects.createFor(alice);
 
         vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
-        new MockOwnable(PROJECTS, PERMISSIONS, bob, uint88(projectId));
+        // forge-lint: disable-next-line(unsafe-typecast)
+        new MockOwnable(projects, permissions, bob, uint88(projectId));
     }
 
     // =========================================================================
     // Test 2: Renounced contract — protectedMethod always reverts
     // =========================================================================
     function test_renounced_protectedMethodAlwaysReverts() public {
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         // Owner can call.
         vm.prank(alice);
@@ -82,8 +83,9 @@ contract OwnableAttacks is Test {
     /// @notice After any ownership transfer, permissionId should reset to 0.
     ///         This prevents stale permission delegation.
     function test_permissionIdResetOnTransfer() public {
-        uint256 projectId = PROJECTS.createFor(alice);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
+        uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Set permission ID.
         vm.prank(alice);
@@ -105,8 +107,9 @@ contract OwnableAttacks is Test {
     // =========================================================================
     /// @notice After transferring project NFT, old owner should lose access.
     function test_staleOwner_afterNFTTransfer() public {
-        uint256 projectId = PROJECTS.createFor(alice);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
+        uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Alice is current owner.
         assertEq(ownable.owner(), alice);
@@ -115,7 +118,7 @@ contract OwnableAttacks is Test {
 
         // Transfer project NFT to bob.
         vm.prank(alice);
-        PROJECTS.transferFrom(alice, bob, projectId);
+        projects.transferFrom(alice, bob, projectId);
 
         // Alice should no longer be owner.
         assertEq(ownable.owner(), bob, "Bob should be new owner");
@@ -135,7 +138,7 @@ contract OwnableAttacks is Test {
     // =========================================================================
     /// @notice transferOwnershipToProject with projectId > type(uint88).max should revert.
     function test_transferOwnershipToProject_overflowReverts() public {
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         // type(uint88).max + 1 = 309485009821345068724781056
         uint256 overflowId = uint256(type(uint88).max) + 1;
@@ -152,11 +155,12 @@ contract OwnableAttacks is Test {
     ///         doesn't grant access to a different project's JBOwnable.
     function test_rootOnWrongProject_noAccess() public {
         // Create two projects.
-        uint256 aliceProject = PROJECTS.createFor(alice);
-        uint256 attackerProject = PROJECTS.createFor(attacker);
+        uint256 aliceProject = projects.createFor(alice);
+        uint256 attackerProject = projects.createFor(attacker);
 
         // Ownable is owned by alice's project.
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(aliceProject));
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(aliceProject));
 
         // Set permission ID so delegated access is possible.
         vm.prank(alice);
@@ -167,8 +171,9 @@ contract OwnableAttacks is Test {
         rootPerms[0] = 1; // ROOT
 
         vm.prank(attacker);
-        PERMISSIONS.setPermissionsFor(
+        permissions.setPermissionsFor(
             attacker,
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: attacker, projectId: uint56(attackerProject), permissionIds: rootPerms})
         );
 

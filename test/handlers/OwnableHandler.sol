@@ -5,12 +5,9 @@ pragma solidity ^0.8.26;
 import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
-import {console} from "forge-std/console.sol";
-
-import {MockOwnable, JBOwnableOverrides} from "../mocks/MockOwnable.sol";
+import {MockOwnable} from "../mocks/MockOwnable.sol";
 import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
 import {JBPermissions} from "@bananapus/core-v6/src/JBPermissions.sol";
-import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsData.sol";
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
 

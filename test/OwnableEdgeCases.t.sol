@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MockOwnable} from "./mocks/MockOwnable.sol";
 import {JBOwnableOverrides} from "../src/JBOwnableOverrides.sol";
-import {JBOwner} from "../src/structs/JBOwner.sol";
 import {IJBOwnable} from "../src/interfaces/IJBOwnable.sol";
 
 import {JBPermissions} from "@bananapus/core-v6/src/JBPermissions.sol";
-import {JBPermissioned} from "@bananapus/core-v6/src/abstract/JBPermissioned.sol";
 import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
 import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
@@ -18,8 +16,8 @@ import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsDat
 /// @notice Edge case and gap tests for JBOwnable: multi-hop NFT transfers,
 ///         project-to-project ownership, permissionId lifecycle, and nonexistent projects.
 contract OwnableEdgeCases is Test {
-    IJBProjects PROJECTS;
-    IJBPermissions PERMISSIONS;
+    IJBProjects projects;
+    IJBPermissions permissions;
 
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
@@ -36,32 +34,33 @@ contract OwnableEdgeCases is Test {
     }
 
     function setUp() public {
-        PERMISSIONS = new JBPermissions(address(0));
-        PROJECTS = new JBProjects(address(123), address(0), address(0));
+        permissions = new JBPermissions(address(0));
+        projects = new JBProjects(address(123), address(0), address(0));
     }
 
     // =========================================================================
     // Test 1: Multi-hop NFT transfer — ownership follows through A→B→C→D
     // =========================================================================
     function test_multiHopNFTTransfer_ownerFollows() public {
-        uint256 projectId = PROJECTS.createFor(alice);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
+        uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         assertEq(ownable.owner(), alice);
 
         // Transfer NFT: alice → bob
         vm.prank(alice);
-        PROJECTS.transferFrom(alice, bob, projectId);
+        projects.transferFrom(alice, bob, projectId);
         assertEq(ownable.owner(), bob, "Should follow to bob");
 
         // Transfer NFT: bob → charlie
         vm.prank(bob);
-        PROJECTS.transferFrom(bob, charlie, projectId);
+        projects.transferFrom(bob, charlie, projectId);
         assertEq(ownable.owner(), charlie, "Should follow to charlie");
 
         // Transfer NFT: charlie → dave
         vm.prank(charlie);
-        PROJECTS.transferFrom(charlie, dave, projectId);
+        projects.transferFrom(charlie, dave, projectId);
         assertEq(ownable.owner(), dave, "Should follow to dave");
 
         // dave can call protectedMethod, alice/bob/charlie cannot
@@ -85,10 +84,11 @@ contract OwnableEdgeCases is Test {
     // Test 2: Transfer project → different project
     // =========================================================================
     function test_transferProjectToProject() public {
-        uint256 projectA = PROJECTS.createFor(alice);
-        uint256 projectB = PROJECTS.createFor(bob);
+        uint256 projectA = projects.createFor(alice);
+        uint256 projectB = projects.createFor(bob);
 
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectA));
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectA));
         assertEq(ownable.owner(), alice);
 
         // Transfer ownership from project A to project B.
@@ -112,11 +112,11 @@ contract OwnableEdgeCases is Test {
     // Test 3: Full ownership cycle: address → project → address → project
     // =========================================================================
     function test_fullOwnershipCycle() public {
-        uint256 projectA = PROJECTS.createFor(alice);
-        uint256 projectB = PROJECTS.createFor(bob);
+        uint256 projectA = projects.createFor(alice);
+        uint256 projectB = projects.createFor(bob);
 
         // Start with address ownership.
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, charlie, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, charlie, 0);
         assertEq(ownable.owner(), charlie);
 
         // charlie → project A (alice)
@@ -137,6 +137,7 @@ contract OwnableEdgeCases is Test {
         // Verify jbOwner struct is correct (projectId set, owner zeroed).
         (address storedOwner, uint88 storedProjectId, uint8 storedPermId) = ownable.jbOwner();
         assertEq(storedOwner, address(0), "owner field should be zero in project mode");
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(storedProjectId, uint88(projectB), "projectId should be projectB");
         assertEq(storedPermId, 0, "permissionId should be 0");
     }
@@ -145,9 +146,10 @@ contract OwnableEdgeCases is Test {
     // Test 4: permissionId lifecycle through multiple transfers
     // =========================================================================
     function test_permissionIdLifecycle() public {
-        uint256 projectA = PROJECTS.createFor(alice);
+        uint256 projectA = projects.createFor(alice);
 
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectA));
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectA));
 
         // Set permissionId to 42.
         vm.prank(alice);
@@ -192,7 +194,7 @@ contract OwnableEdgeCases is Test {
     function test_nonOwnerCannotSetPermissionId(address nonOwner) public {
         vm.assume(nonOwner != alice && nonOwner != address(0));
 
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         vm.prank(nonOwner);
         vm.expectRevert();
@@ -204,8 +206,8 @@ contract OwnableEdgeCases is Test {
     // =========================================================================
     function test_transferToNonexistentProject_reverts() public {
         // Create one project so count == 1.
-        PROJECTS.createFor(alice);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        projects.createFor(alice);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         // Project 2 doesn't exist.
         vm.prank(alice);
@@ -223,8 +225,9 @@ contract OwnableEdgeCases is Test {
     //         transferred, old delegate loses access
     // =========================================================================
     function test_delegatedAccess_lostAfterNFTTransfer() public {
-        uint256 projectId = PROJECTS.createFor(alice);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, address(0), uint88(projectId));
+        uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Set permissionId so delegation is possible.
         vm.prank(alice);
@@ -234,8 +237,10 @@ contract OwnableEdgeCases is Test {
         uint8[] memory permIds = new uint8[](1);
         permIds[0] = 42;
         vm.prank(alice);
-        PERMISSIONS.setPermissionsFor(
-            alice, JBPermissionsData({operator: charlie, projectId: uint56(projectId), permissionIds: permIds})
+        permissions.setPermissionsFor(
+            // forge-lint: disable-next-line(unsafe-typecast)
+            alice,
+            JBPermissionsData({operator: charlie, projectId: uint56(projectId), permissionIds: permIds})
         );
 
         // Charlie can call protectedMethod (delegated via permissions).
@@ -244,7 +249,7 @@ contract OwnableEdgeCases is Test {
 
         // Transfer NFT to bob.
         vm.prank(alice);
-        PROJECTS.transferFrom(alice, bob, projectId);
+        projects.transferFrom(alice, bob, projectId);
 
         // Charlie's delegation was from alice. Now owner is bob.
         // Charlie should lose access because _checkOwner resolves to bob,
@@ -262,7 +267,7 @@ contract OwnableEdgeCases is Test {
     // Test 8: OwnershipTransferred event emitted correctly
     // =========================================================================
     function test_ownershipTransferredEvent() public {
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         // Transfer to bob — expect event.
         vm.expectEmit(true, true, false, true);
@@ -276,7 +281,7 @@ contract OwnableEdgeCases is Test {
     // Test 9: PermissionIdChanged event emitted correctly
     // =========================================================================
     function test_permissionIdChangedEvent() public {
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         vm.expectEmit(true, true, false, true);
         emit IJBOwnable.PermissionIdChanged(42, alice);
@@ -291,8 +296,8 @@ contract OwnableEdgeCases is Test {
     function testFuzz_transferToProject(address projectOwner) public isNotContract(projectOwner) {
         vm.assume(projectOwner != address(0));
 
-        uint256 projectId = PROJECTS.createFor(projectOwner);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        uint256 projectId = projects.createFor(projectOwner);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         vm.prank(alice);
         ownable.transferOwnershipToProject(projectId);
@@ -302,6 +307,7 @@ contract OwnableEdgeCases is Test {
         // Verify jbOwner struct.
         (address storedOwner, uint88 storedProjectId,) = ownable.jbOwner();
         assertEq(storedOwner, address(0), "stored owner should be zero");
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(storedProjectId, uint88(projectId), "stored projectId should match");
     }
 
@@ -311,8 +317,8 @@ contract OwnableEdgeCases is Test {
     /// @notice After renouncing, no one can call transferOwnership, transferOwnershipToProject,
     ///         setPermissionId, or renounceOwnership again.
     function test_renouncedContract_cannotReclaim() public {
-        uint256 projectId = PROJECTS.createFor(alice);
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        uint256 projectId = projects.createFor(alice);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         vm.prank(alice);
         ownable.renounceOwnership();
@@ -349,7 +355,7 @@ contract OwnableEdgeCases is Test {
     ///         NOT ERC2771Context. This test documents that a trusted forwarder
     ///         appending a sender address to calldata does NOT affect _checkOwner.
     function test_noERC2771_trustedForwarderHasNoEffect() public {
-        MockOwnable ownable = new MockOwnable(PROJECTS, PERMISSIONS, alice, 0);
+        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
         // Simulate what a trusted forwarder would do: call with alice's address
         // appended to calldata. Since JBOwnable uses plain Context, this has no effect.

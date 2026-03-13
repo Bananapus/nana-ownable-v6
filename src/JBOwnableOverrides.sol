@@ -75,7 +75,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             revert JBOwnableOverrides_InvalidNewOwner();
         }
 
-        _transferOwnership(initialOwner, initialProjectIdOwner);
+        _transferOwnership({newOwner: initialOwner, projectId: initialProjectIdOwner});
     }
 
     //*********************************************************************//
@@ -140,7 +140,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// @dev This can only be called by the current owner.
     function renounceOwnership() public virtual override {
         _checkOwner();
-        _transferOwnership(address(0), 0);
+        _transferOwnership({newOwner: address(0), projectId: 0});
     }
 
     /// @notice Sets the permission ID the owner can use to give other addresses owner access.
@@ -162,7 +162,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             revert JBOwnableOverrides_InvalidNewOwner();
         }
 
-        _transferOwnership(newOwner, 0);
+        _transferOwnership({newOwner: newOwner, projectId: 0});
     }
 
     /// @notice Transfer ownership of this contract to a new Juicebox project.
@@ -181,7 +181,8 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             revert JBOwnableOverrides_ProjectDoesNotExist();
         }
 
-        _transferOwnership(address(0), uint88(projectId));
+        // forge-lint: disable-next-line(unsafe-typecast)
+        _transferOwnership({newOwner: address(0), projectId: uint88(projectId)});
     }
 
     //*********************************************************************//
@@ -207,7 +208,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// @notice Helper to allow for drop-in replacement of OpenZeppelin `Ownable`.
     /// @param newOwner The address that should receive ownership of this contract.
     function _transferOwnership(address newOwner) internal virtual {
-        _transferOwnership(newOwner, 0);
+        _transferOwnership({newOwner: newOwner, projectId: 0});
     }
 
     /// @notice Transfers this contract's ownership to an address (`newOwner`) OR a Juicebox project (`projectId`).
@@ -238,6 +239,6 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         // This is to prevent permissions clashes for the new user/owner.
         jbOwner = JBOwner({owner: newOwner, projectId: projectId, permissionId: 0});
         // Emit a transfer event with the new owner's address.
-        _emitTransferEvent(oldOwner, newOwner, projectId);
+        _emitTransferEvent({previousOwner: oldOwner, newOwner: newOwner, newProjectId: projectId});
     }
 }
