@@ -239,7 +239,8 @@ contract OwnableEdgeCases is Test {
         vm.prank(alice);
         permissions.setPermissionsFor(
             // forge-lint: disable-next-line(unsafe-typecast)
-            alice, JBPermissionsData({operator: charlie, projectId: uint56(projectId), permissionIds: permIds})
+            alice,
+            JBPermissionsData({operator: charlie, projectId: uint56(projectId), permissionIds: permIds})
         );
 
         // Charlie can call protectedMethod (delegated via permissions).
