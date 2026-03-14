@@ -47,7 +47,7 @@ JBOwner {
 2. If `projectId == 0`, the owner is `JBOwner.owner` directly.
 3. In both cases, `_checkOwner()` calls `_requirePermissionFrom(resolvedOwner, projectId, permissionId)`, which passes if `msg.sender` is the resolved owner OR has the configured `permissionId` granted through `JBPermissions`.
 
-**Permission delegation** uses the nana-core `JBPermissions` contract. The owner calls `JBPermissions.setPermissionsFor(...)` to grant `permissionId` to an operator address. That operator can then call any `onlyOwner` function on this contract. The ROOT permission (ID 255) in `JBPermissions` grants all permission IDs, including whatever `permissionId` is configured here.
+**Permission delegation** uses the nana-core `JBPermissions` contract. The owner calls `JBPermissions.setPermissionsFor(...)` to grant `permissionId` to an operator address. That operator can then call any `onlyOwner` function on this contract. The ROOT permission (ID 1) in `JBPermissions` grants all permission IDs, including whatever `permissionId` is configured here.
 
 **Ownership transfer resets `permissionId` to 0.** This prevents the previous owner's delegates from retaining access after a transfer. The new owner must explicitly call `setPermissionId()` to configure delegation.
 
