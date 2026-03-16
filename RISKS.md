@@ -1,23 +1,21 @@
-# nana-ownable-v6 — Risks
+# RISKS.md -- nana-ownable-v6
 
-## Trust Assumptions
+## 1. Trust Assumptions
 
-1. **JBPermissions** — Permission checks delegate to JBPermissions contract. A bug in JBPermissions affects all JBOwnable contracts.
-2. **JBProjects ERC-721** — When owned by a project, ownership follows the ERC-721 token. Whoever holds the project NFT has owner access.
-3. **Permission Delegation** — Anyone granted the configured `permissionId` via JBPermissions gets owner-equivalent access.
+- **JBPermissions.** Permission checks delegate to JBPermissions contract. A bug in JBPermissions affects all JBOwnable contracts.
+- **JBProjects ERC-721.** When owned by a project, ownership follows the ERC-721 token. Whoever holds the project NFT has owner access.
+- **Permission Delegation.** Anyone granted the configured `permissionId` via JBPermissions gets owner-equivalent access for the scoped function.
 
-## Known Risks
+## 2. Known Risks
 
-| Risk | Description | Mitigation |
-|------|-------------|------------|
-| Permission escalation | Granting `permissionId` gives full owner access to that function | Only grant to trusted operators |
-| Project NFT transfer | Transferring the project NFT transfers ownership of all JBOwnable contracts tied to it | Intentional design; use multisig for project NFT |
-| Renounce is permanent | `renounceOwnership()` is irreversible | Standard OpenZeppelin pattern |
-| Zero address project | Setting `projectId = 0` with `owner = address(0)` permanently locks ownership | Validate before calling |
+- **Project NFT transfer = ownership transfer.** If ownership is tied to a project ID, anyone who acquires the project NFT (via transfer, marketplace purchase, or social engineering) gains full owner access to all contracts using that JBOwnable instance. Project NFT holders must treat the NFT as a high-value key.
+- **Permission ID reset on transfer.** `permissionId` resets to 0 on ownership transfer, which could temporarily lock out delegated operators. By design -- prevents permission clashes for new owners.
+- **Burned/invalid project NFT.** If the project NFT is burned or `ownerOf` reverts, the contract is effectively renounced (owner resolves to `address(0)`). Defensive try-catch in `owner()` and `_checkOwner()`. JBProjects V6 has no burn function, so this is a defensive measure.
+- **Dual ownership ambiguity.** Setting both `newOwner` and `projectId` to non-zero reverts, but the two-mode design could confuse integrators about which mode is active. `jbOwner()` exposes both fields for inspection.
+- **`transferOwnershipToProject` with future project.** Checks `projectId > PROJECTS.count()` to prevent transferring to non-existent projects.
 
-## Privileged Roles
+## 3. Invariants to Verify
 
-| Role | Access | Scope |
-|------|--------|-------|
-| Owner (address or project holder) | All `onlyOwner` functions | Per-contract |
-| Permission delegates | `onlyOwner` functions via JBPermissions | Per-contract, per-permissionId |
+- Ownership is always exactly one of: direct address OR project NFT holder (never both, never neither unless renounced).
+- `_checkOwner()` reverts for all callers when the owner resolves to `address(0)`.
+- `permissionId` is correctly reset to 0 on every ownership transfer.
