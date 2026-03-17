@@ -75,6 +75,10 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             revert JBOwnableOverrides_InvalidNewOwner();
         }
 
+        // No explicit project existence check here — if `initialProjectIdOwner` refers to an unminted project,
+        // `owner()` will resolve via `PROJECTS.ownerOf()`, which reverts for non-existent tokens. The try-catch
+        // in `owner()` treats this as renounced (returns address(0)), effectively locking the contract until
+        // the project is minted. This is acceptable because deployers control the constructor arguments.
         _transferOwnership({newOwner: initialOwner, projectId: initialProjectIdOwner});
     }
 
