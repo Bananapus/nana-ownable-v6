@@ -36,9 +36,16 @@ In v6, `transferOwnershipToProject()` checks `projectId > PROJECTS.count()` and 
 
 In v6, the constructor reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` if `initialProjectIdOwner != 0` and `address(projects) == address(0)`. In v5, this combination was silently accepted, which would permanently break ownership resolution since `ownerOf()` calls on `address(0)` would always revert.
 
-### `IJBOwnable.jbOwner()` Return Name Change
+### `IJBOwnable` Return Name Changes
 
 The second return value of `jbOwner()` was renamed from `projectOwner` (v5) to `projectId` (v6) in the interface. The type (`uint88`) and position are unchanged, so the ABI is identical, but code referencing the named return will need updating.
+
+Additionally, `PROJECTS()` and `owner()` gained named return values in the interface:
+
+- `PROJECTS()`: `returns (IJBProjects)` (v5) -> `returns (IJBProjects projects)` (v6)
+- `owner()`: `returns (address)` (v5) -> `returns (address owner)` (v6)
+
+These are ABI-compatible but change the Solidity-level interface signature.
 
 ---
 
@@ -193,7 +200,7 @@ All internal function calls in v6 use named arguments (e.g., `_transferOwnership
 
 ### NatSpec Improvements
 
-- `JBOwnable._emitTransferEvent()`: Incomplete comment in v5 (`"some contracts will try to deploy contracts for a project before"`) is completed in v6 (`"some contracts need to deploy contracts for a project before the project's NFT has been minted, so the transfer event resolves the project's current owner at emission time."`).
+- `JBOwnable._emitTransferEvent()`: Incomplete comment in v5 (`"some contracts will try to deploy contracts for a project before"`) is completed in v6 (`"some contracts need to deploy contracts for a project before the project's NFT has been minted, so the transfer event resolves the project's current owner at emission time."`). A new `@dev` comment also explains why this function intentionally does NOT use try-catch (unlike `_transferOwnership`): reverting on a nonexistent new project is desirable to prevent transferring ownership to an invalid project.
 - `JBOwnableOverrides._emitTransferEvent()`: Added `@param` tags for `previousOwner`, `newOwner`, and `newProjectId`.
 - `renounceOwnership()`, `setPermissionId()`: Changed `@notice This can only be called by the current owner.` to `@dev`.
 - `transferOwnership()`, `transferOwnershipToProject()`: Added documentation about `permissionId` being reset to 0 on transfer.
@@ -215,6 +222,7 @@ All internal function calls in v6 use named arguments (e.g., `_transferOwnership
 | `transferOwnershipToProject()` -- no existence check | Reverts with `JBOwnableOverrides_ProjectDoesNotExist()` if `projectId > PROJECTS.count()` | New validation |
 | Constructor allows `projects == address(0)` with `initialProjectIdOwner != 0` | Reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` | New validation |
 | `IJBOwnable.jbOwner()` returns `(address owner, uint88 projectOwner, uint8 permissionId)` | Returns `(address owner, uint88 projectId, uint8 permissionId)` | Return name change (ABI compatible) |
+| `IJBOwnable.PROJECTS()` returns `(IJBProjects)`, `owner()` returns `(address)` | Returns `(IJBProjects projects)`, `(address owner)` | Named return values added (ABI compatible) |
 | `IJBOwnable` -- no NatSpec | Full NatSpec on all events, functions, params, and returns | Documentation |
 | Positional arguments in internal calls | Named arguments throughout | Style only |
 | 1 custom error | 3 custom errors (`+ ProjectDoesNotExist`, `+ ZeroAddressProjectsWithProjectOwner`) | New errors |
