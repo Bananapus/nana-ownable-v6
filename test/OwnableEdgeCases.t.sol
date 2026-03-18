@@ -238,8 +238,8 @@ contract OwnableEdgeCases is Test {
         permIds[0] = 42;
         vm.prank(alice);
         permissions.setPermissionsFor(
-            // forge-lint: disable-next-line(unsafe-typecast)
             alice,
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: charlie, projectId: uint56(projectId), permissionIds: permIds})
         );
 
