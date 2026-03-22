@@ -89,7 +89,7 @@ Ownership transitions must be airtight:
 ### 4. Renunciation Edge Cases
 
 - **Renouncing when project-owned.** If `projectId != 0` and the NFT holder calls `renounceOwnership()`, both `owner` and `projectId` are set to 0. Verify the NFT holder can still call `renounceOwnership()` (passes `_checkOwner` with the project-resolved owner).
-- **Renouncing after NFT burn.** If the project NFT is burned (hypothetically -- JBProjects V6 has no burn), `owner()` returns `address(0)`, making `_checkOwner()` revert for everyone. The contract is effectively renounced without anyone calling `renounceOwnership()`. Verify this state is consistent and cannot be escaped.
+- **Implicit renunciation via unreachable `ownerOf`.** JBProjects V6 has no burn function, so `PROJECTS.ownerOf()` cannot revert for a valid project ID under normal conditions. The try-catch in `owner()` and `_checkOwner()` is a defensive measure against hypothetical future changes to `JBProjects` or unexpected ERC-721 behavior. If `ownerOf` ever did revert, `owner()` would return `address(0)` and `_checkOwner()` would revert for all callers -- the contract would be effectively renounced without anyone calling `renounceOwnership()`. Verify this state is consistent and cannot be escaped.
 - **Double renounce.** After renouncing, calling `renounceOwnership()` again should revert because `_checkOwner()` will fail (resolved owner is `address(0)` and `msg.sender` cannot be `address(0)`).
 
 ### 5. Storage Slot Packing
@@ -129,5 +129,40 @@ forge test --match-path test/regression/ -vvv
 # Write a PoC
 forge test --match-path test/audit/ExploitPoC.t.sol -vvv
 ```
+
+## Error Reference
+
+All custom errors are defined in `src/JBOwnableOverrides.sol`.
+
+| Error | Trigger Condition |
+|-------|-------------------|
+| `JBOwnableOverrides_InvalidNewOwner()` | (1) Constructor called with both `initialOwner == address(0)` and `initialProjectIdOwner == 0`. (2) `transferOwnership()` called with `newOwner == address(0)`. (3) `transferOwnershipToProject()` called with `projectId == 0` or `projectId > type(uint88).max`. (4) `_transferOwnership(address, uint88)` called with both `newOwner != address(0)` and `projectId != 0`. |
+| `JBOwnableOverrides_ProjectDoesNotExist()` | `transferOwnershipToProject()` called with a `projectId` greater than `PROJECTS.count()` (the project has not been minted yet). |
+| `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` | Constructor called with `initialProjectIdOwner != 0` and `address(projects) == address(0)`. Prevents deploying with project-based ownership when no `JBProjects` contract is provided. |
+
+## Previous Audit Findings
+
+A Nemesis audit (Feynman + State Inconsistency methodology) was conducted on 2026-03-17. Full results are in `.audit/findings/nemesis-verified.md`.
+
+**Result: 0 Critical | 0 High | 0 Medium | 2 Low (informational)**
+
+| ID | Severity | Summary |
+|----|----------|---------|
+| NM-001 | LOW | Constructor lacks explicit project existence check -- deploys with a non-existent `initialProjectIdOwner` revert with an opaque ERC-721 error instead of `JBOwnableOverrides_ProjectDoesNotExist()`. Developer experience only, no security impact. |
+| NM-002 | LOW | `_emitTransferEvent` in `JBOwnable` does not use try-catch for `PROJECTS.ownerOf()`, unlike `owner()` and `_checkOwner()`. This is a deliberate design tradeoff: write-path failures should revert (preventing incorrect event data), while read-path failures degrade gracefully. |
+
+No other formal audit with finding IDs has been conducted.
+
+## Compiler and Version Info
+
+From `foundry.toml`:
+
+| Setting | Value |
+|---------|-------|
+| Solidity version | `0.8.26` |
+| EVM target | `cancun` |
+| Optimizer | Enabled, 200 runs |
+| Fuzz runs | 4,096 |
+| Invariant runs | 1,024 (depth 100) |
 
 Go break it.
