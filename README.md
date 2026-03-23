@@ -14,6 +14,31 @@ Forked from [`jbx-protocol/juice-ownable`](https://github.com/jbx-protocol/juice
 
 _If you have questions, take a look at the [core protocol contracts](https://github.com/Bananapus/nana-core-v6) and the [documentation](https://docs.juicebox.money/) first, or reach out on [Discord](https://discord.com/invite/ErQYmth4dS)._
 
+## Repository Layout
+
+```
+src/
+├── JBOwnable.sol               -- Concrete implementation (inherit this)
+├── JBOwnableOverrides.sol      -- Abstract base with all ownership logic
+├── interfaces/
+│   └── IJBOwnable.sol          -- Interface for ownership queries, transfers, and events
+└── structs/
+    └── JBOwner.sol             -- Packed struct: owner (160 bits) + projectId (88 bits) + permissionId (8 bits)
+
+test/
+├── Ownable.t.sol               -- Core ownership tests
+├── OwnableAttacks.t.sol        -- Attack vector tests
+├── OwnableEdgeCases.t.sol      -- Edge case coverage
+├── OwnableInvariantTests.sol   -- Invariant/fuzz tests
+├── handlers/
+│   └── OwnableHandler.sol      -- Invariant test handler
+├── mocks/
+│   └── MockOwnable.sol         -- Mock contract for testing
+└── regression/
+    ├── BurnLockProtection.t.sol -- Regression: burned NFT lockout
+    └── ZeroAddressValidation.t.sol -- Regression: zero-address edge cases
+```
+
 ## Architecture
 
 ```
@@ -77,6 +102,12 @@ When `_checkOwner()` is called (by the `onlyOwner` modifier), it:
 2. The owner calls `JBPermissions.setPermissionsFor(...)` to grant that permission ID to specific addresses on the relevant project.
 3. Those addresses can now call `onlyOwner` functions.
 4. If the project NFT is transferred to a new holder, delegated permissions granted by the previous holder stop working -- the new holder must re-grant permissions.
+
+## Risks
+
+- **Burned project NFT permanently locks the contract.** If ownership is tied to a project and the project NFT is burned, `owner()` returns `address(0)` (the `ownerOf` call reverts and the try-catch falls through). No one can call `onlyOwner` functions, and there is no recovery path -- this is effectively permanent renunciation. JBProjects V6 does not expose a public burn function, but a project NFT could still be burned via a custom token wrapper or a future upgrade.
+- **Silent loss of delegated access on ownership transfer.** The `permissionId` resets to 0 on every ownership transfer (both `transferOwnership` and `transferOwnershipToProject`). Any operators previously granted the old `permissionId` via `JBPermissions` lose their `onlyOwner` access without notification. The new owner must call `setPermissionId` and re-grant permissions to restore delegated access. Off-chain monitoring of the `PermissionIdChanged` event is recommended.
+- **Permission ID collisions with other JBPermissions grants.** The `permissionId` set on a `JBOwnable` contract is checked via the same `JBPermissions` registry used by the rest of the protocol. If the chosen `permissionId` overlaps with an ID already granted to operators for other purposes (e.g., a terminal permission or a hook permission), those operators will also pass the `onlyOwner` check -- gaining unintended owner-level access to the `JBOwnable` contract. Choose a `permissionId` that is not used by any other permission in the project's permission set.
 
 ## Install
 

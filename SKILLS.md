@@ -21,6 +21,10 @@ JBOwnable
         └── IJBOwnable (interface)
 ```
 
+## Deployed Addresses
+
+Library contract -- deployed as part of inheriting contracts (e.g., `JB721TiersHook`, `JBBuybackHook`). No standalone deployment.
+
 ## Key Functions
 
 ### Public / External
@@ -71,6 +75,22 @@ JBOwnable
 | `JBOwnableOverrides_ProjectDoesNotExist()` | `transferOwnershipToProject(id)` where `id > PROJECTS.count()`. |
 | `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` | Constructor receives a non-zero `initialProjectIdOwner` with `projects` set to `address(0)`. |
 
+## IJBOwnable Interface
+
+Defined in `src/interfaces/IJBOwnable.sol`. Pragma `^0.8.0`.
+
+| Method | Signature | Returns |
+|--------|-----------|---------|
+| `PROJECTS()` | `function PROJECTS() external view` | `IJBProjects` |
+| `jbOwner()` | `function jbOwner() external view` | `(address owner, uint88 projectId, uint8 permissionId)` |
+| `owner()` | `function owner() external view` | `address` |
+| `renounceOwnership()` | `function renounceOwnership() external` | -- |
+| `setPermissionId(uint8)` | `function setPermissionId(uint8 permissionId) external` | -- |
+| `transferOwnership(address)` | `function transferOwnership(address newOwner) external` | -- |
+| `transferOwnershipToProject(uint256)` | `function transferOwnershipToProject(uint256 projectId) external` | -- |
+
+Events: `OwnershipTransferred(address indexed previousOwner, address indexed newOwner, address caller)`, `PermissionIdChanged(uint8 newId, address caller)`.
+
 ## Integration Points
 
 | Dependency | Import | Used For |
@@ -91,7 +111,7 @@ JBOwnable
 - **`transferOwnershipToProject` checks existence.** It compares the project ID against `PROJECTS.count()` and reverts with `JBOwnableOverrides_ProjectDoesNotExist` if the project does not exist, preventing permanent loss of contract control.
 - **`owner()` makes an external call in project mode.** When `projectId != 0`, `owner()` calls `PROJECTS.ownerOf(projectId)`, which is an external call. This is relevant for gas-sensitive contexts. If the call reverts (e.g., the project NFT was burned), `owner()` returns `address(0)` and the contract degrades to a renounced state.
 - **Constructor rejects zero-address PROJECTS with project ownership.** Deploying with `projects = address(0)` and a non-zero `initialProjectIdOwner` reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner`, preventing permanently broken ownership resolution.
-- **No ERC2771 support.** Despite inheriting `Context`, `JBOwnable` uses plain `Context._msgSender()` (which returns `msg.sender`), not `ERC2771Context`. A trusted forwarder appending a sender address to calldata has no effect on ownership checks.
+- **No ERC2771 support.** Despite inheriting `Context`, `JBOwnable` uses plain `Context._msgSender()` (which returns `msg.sender`), not `ERC2771Context`. A trusted forwarder appending a sender address to calldata has no effect on ownership checks. If you need meta-tx support, override `_msgSender()` and `_msgData()` with `ERC2771Context` in your inheriting contract.
 
 ## Example: Inherit JBOwnable
 
