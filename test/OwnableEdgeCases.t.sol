@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {MockOwnable} from "./mocks/MockOwnable.sol";
+import {MockOwnableERC2771} from "./mocks/MockOwnableERC2771.sol";
 import {JBOwnableOverrides} from "../src/JBOwnableOverrides.sol";
 import {IJBOwnable} from "../src/interfaces/IJBOwnable.sol";
 
@@ -370,5 +371,55 @@ contract OwnableEdgeCases is Test {
         // Direct call from alice still works.
         vm.prank(alice);
         ownable.protectedMethod();
+    }
+
+    // =========================================================================
+    // Test 13: OwnershipTransferred event uses _msgSender() (L-27 fix)
+    // =========================================================================
+    /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
+    ///         the OwnershipTransferred event's caller field should reflect the
+    ///         forwarded sender, not msg.sender.
+    function test_ownershipTransferredEvent_usesOverriddenMsgSender() public {
+        address forwarder = makeAddr("forwarder");
+        MockOwnableERC2771 ownable = new MockOwnableERC2771(projects, permissions, alice, 0, forwarder);
+
+        // Expect event with caller=alice (the forwarded sender), not forwarder.
+        vm.expectEmit(true, true, false, true);
+        emit IJBOwnable.OwnershipTransferred(alice, bob, alice);
+
+        // Forwarder calls transferOwnership with alice's address appended (ERC-2771 style).
+        bytes memory callData = abi.encodeWithSelector(
+            IJBOwnable.transferOwnership.selector, bob
+        );
+        bytes memory forwardedCallData = abi.encodePacked(callData, alice);
+
+        vm.prank(forwarder);
+        (bool success,) = address(ownable).call(forwardedCallData);
+        assertTrue(success, "Forwarded transferOwnership should succeed");
+    }
+
+    // =========================================================================
+    // Test 14: PermissionIdChanged event uses _msgSender() (L-27 fix)
+    // =========================================================================
+    /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
+    ///         the PermissionIdChanged event's caller field should reflect the
+    ///         forwarded sender, not msg.sender.
+    function test_permissionIdChangedEvent_usesOverriddenMsgSender() public {
+        address forwarder = makeAddr("forwarder");
+        MockOwnableERC2771 ownable = new MockOwnableERC2771(projects, permissions, alice, 0, forwarder);
+
+        // Expect event with caller=alice (the forwarded sender), not forwarder.
+        vm.expectEmit(true, true, false, true);
+        emit IJBOwnable.PermissionIdChanged(42, alice);
+
+        // Forwarder calls setPermissionId with alice's address appended.
+        bytes memory callData = abi.encodeWithSelector(
+            IJBOwnable.setPermissionId.selector, uint8(42)
+        );
+        bytes memory forwardedCallData = abi.encodePacked(callData, alice);
+
+        vm.prank(forwarder);
+        (bool success,) = address(ownable).call(forwardedCallData);
+        assertTrue(success, "Forwarded setPermissionId should succeed");
     }
 }

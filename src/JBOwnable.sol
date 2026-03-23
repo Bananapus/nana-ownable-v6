@@ -73,7 +73,7 @@ contract JBOwnable is JBOwnableOverrides {
         emit OwnershipTransferred({
             previousOwner: previousOwner,
             newOwner: newProjectId == 0 ? newOwner : PROJECTS.ownerOf(newProjectId),
-            caller: msg.sender
+            caller: _msgSender()
         });
     }
 }

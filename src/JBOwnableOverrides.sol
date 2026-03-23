@@ -206,7 +206,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// @param permissionId The permission ID to use for `onlyOwner`.
     function _setPermissionId(uint8 permissionId) internal virtual {
         jbOwner.permissionId = permissionId;
-        emit PermissionIdChanged({newId: permissionId, caller: msg.sender});
+        emit PermissionIdChanged({newId: permissionId, caller: _msgSender()});
     }
 
     /// @notice Helper to allow for drop-in replacement of OpenZeppelin `Ownable`.
