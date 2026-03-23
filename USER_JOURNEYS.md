@@ -18,46 +18,54 @@ Concrete end-to-end flows through the JBOwnable system. Each journey traces the 
 
 **State changes**:
 1. `PROJECTS` immutable set to `projects`
-2. Constructor validates `initialProjectIdOwner != 0` AND `address(projects) != address(0)` (reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner` if violated)
-3. `_transferOwnership(address(0), projectId)` executes:
+2. `PERMISSIONS` immutable set to `permissions` (inherited from `JBPermissioned`)
+3. Constructor validates `initialProjectIdOwner != 0` AND `address(projects) != address(0)` (reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner` if violated)
+4. Constructor validates that at least one of `initialOwner` or `initialProjectIdOwner` is non-zero (reverts with `JBOwnableOverrides_InvalidNewOwner` if both are zero)
+5. `_transferOwnership(address(0), projectId)` executes:
    - Sets `jbOwner = JBOwner({owner: address(0), projectId: projectId, permissionId: 0})`
    - Calls `_emitTransferEvent(address(0), address(0), projectId)`
-4. `owner()` now resolves dynamically via `PROJECTS.ownerOf(projectId)`
+6. `owner()` now resolves dynamically via `PROJECTS.ownerOf(projectId)`
 
-**Events**: `OwnershipTransferred(previousOwner: address(0), newOwner: PROJECTS.ownerOf(projectId), caller: msg.sender)`
+**Events**: `OwnershipTransferred(address indexed previousOwner, address indexed newOwner, address caller)` -- emitted as `OwnershipTransferred(address(0), PROJECTS.ownerOf(projectId), msg.sender)`
 
 **Edge cases**:
-- If the project does not exist (ID > `PROJECTS.count()`), the constructor still succeeds -- the existence check is only enforced in `transferOwnershipToProject`, not the constructor. The deployer presumably knows the project exists.
+- If the project does not exist (ID > `PROJECTS.count()`), the constructor still succeeds -- the existence check is only enforced in `transferOwnershipToProject`, not the constructor. If the project NFT has not yet been minted, `PROJECTS.ownerOf()` reverts, and the try-catch in `owner()` returns `address(0)`, effectively locking the contract until the project is minted.
 - `owner()` returns the current NFT holder dynamically. If the NFT is transferred, ownership automatically follows -- no on-chain update to the JBOwnable contract is needed.
+- Deploying with both `initialOwner == address(0)` and `initialProjectIdOwner == 0` reverts with `JBOwnableOverrides_InvalidNewOwner`. To create an unowned contract, set an owner and call `renounceOwnership()` in the constructor body.
 
-   - `initialOwner = address(0)` because ownership is project-based
-   - `initialProjectIdOwner = projectId`
+**What to verify**:
+- `jbOwner.owner == address(0)` and `jbOwner.projectId == projectId` after construction
+- `jbOwner.permissionId == 0` (no delegated access until explicitly configured)
+- `owner()` returns the current NFT holder, not a cached value
 
-2. **Constructor execution in `JBOwnableOverrides`**
+---
 
-   - Stores `PROJECTS = projects` (immutable)
-   - Guard: reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner` if `initialProjectIdOwner != 0` and `address(projects) == address(0)` — passes (projects is non-zero)
-   - Validates: not both zero (passes because `initialProjectIdOwner != 0`)
-   - Calls `_transferOwnership(address(0), projectId)`:
-     - Sets `jbOwner = JBOwner({owner: address(0), projectId: projectId, permissionId: 0})`
-     - Calls `_emitTransferEvent(address(0), address(0), projectId)`
-   - In `JBOwnable._emitTransferEvent`: emits `OwnershipTransferred(address(0), PROJECTS.ownerOf(projectId), msg.sender)`
+## Journey 1b: Deploy an Address-Owned Contract
 
-3. **Ownership is now live**
+**Entry point**: `new MyHook(IJBPermissions permissions, IJBProjects projects, address initialOwner, uint88(0))`
 
-   - `owner()` calls `PROJECTS.ownerOf(projectId)` and returns the current NFT holder
-   - `_checkOwner()` validates `msg.sender` against the NFT holder (or permission delegates)
+**Who can call**: Anyone (deployment is permissionless).
 
-### Result
+**Parameters**:
+- `permissions` -- The `IJBPermissions` contract used for delegated access checks
+- `projects` -- The `IJBProjects` contract (can be `address(0)` when not using project-based ownership)
+- `initialOwner` -- The address that becomes the contract owner (must not be `address(0)`)
+- `initialProjectIdOwner` -- Set to `0` because ownership is address-based
 
-The contract is owned by whichever address holds the project NFT. If the NFT is transferred, ownership automatically follows -- no on-chain update to the JBOwnable contract is needed.
+**State changes**:
+1. `PROJECTS` immutable set to `projects`
+2. `PERMISSIONS` immutable set to `permissions` (inherited from `JBPermissioned`)
+3. Constructor validates that `initialOwner != address(0)` (reverts with `JBOwnableOverrides_InvalidNewOwner` if both `initialOwner` and `initialProjectIdOwner` are zero)
+4. `_transferOwnership(initialOwner, 0)` executes:
+   - Sets `jbOwner = JBOwner({owner: initialOwner, projectId: 0, permissionId: 0})`
+   - Calls `_emitTransferEvent(address(0), initialOwner, 0)`
 
-### What to verify
+**Events**: `OwnershipTransferred(address indexed previousOwner, address indexed newOwner, address caller)` -- emitted as `OwnershipTransferred(address(0), initialOwner, msg.sender)`
 
-- `jbOwner.owner == address(0)` and `jbOwner.projectId == projectId` after construction.
-- `jbOwner.permissionId == 0` (no delegated access until explicitly configured).
-- `owner()` returns the current NFT holder, not a cached value.
-- If the project does not exist, the constructor reverts. `_emitTransferEvent` calls `PROJECTS.ownerOf(projectId)` without try-catch, which reverts for non-existent tokens. This is intentional — it prevents deploying an ownable contract tied to a non-existent project.
+**Edge cases**:
+- `owner()` returns `jbOwner.owner` directly (no `PROJECTS.ownerOf()` lookup since `projectId == 0`)
+- Ownership does NOT follow NFT transfers -- it is static until explicitly transferred via `transferOwnership()` or `transferOwnershipToProject()`
+- `PROJECTS` can be `address(0)` in this mode since it is never consulted for ownership resolution. However, `transferOwnershipToProject()` will revert if `PROJECTS` is `address(0)` (the `PROJECTS.count()` call reverts).
 
 ---
 
@@ -70,25 +78,15 @@ The contract is owned by whichever address holds the project NFT. If the NFT is 
 **Parameters**:
 - `newOwner` -- The address to transfer ownership to (must not be `address(0)`)
 
-### Steps
-
-1. **`_checkOwner()` validates the caller**
-
-   - Resolves the current owner (via `PROJECTS.ownerOf()` if project-owned, or `jbOwner.owner` if address-owned)
-   - Calls `_requirePermissionFrom(resolvedOwner, projectId, permissionId)`
-   - Passes if `msg.sender == resolvedOwner` OR `msg.sender` has the required permission
-
-2. **Owner calls `transferOwnership(newOwner)`**
-
-   - `newOwner` must not be `address(0)` (reverts with `JBOwnableOverrides_InvalidNewOwner`)
-
-3. **`_transferOwnership(newOwner, 0)` executes the transfer**
-
-   - Records `oldOwner` (resolved from current `jbOwner`)
+**State changes**:
+1. `_checkOwner()` validates the caller against the resolved owner and `permissionId`
+2. Validates `newOwner != address(0)` (reverts with `JBOwnableOverrides_InvalidNewOwner`)
+3. `_transferOwnership(newOwner, 0)` executes:
+   - Records `oldOwner` (resolved from current `jbOwner`, with try-catch for burned project NFTs)
    - Overwrites `jbOwner = JBOwner({owner: newOwner, projectId: 0, permissionId: 0})`
    - Calls `_emitTransferEvent(oldOwner, newOwner, 0)`
 
-**Events**: `OwnershipTransferred(previousOwner: oldOwner, newOwner: newOwner, caller: msg.sender)`
+**Events**: `OwnershipTransferred(address indexed previousOwner, address indexed newOwner, address caller)` -- emitted as `OwnershipTransferred(oldOwner, newOwner, msg.sender)`
 
 **Edge cases**:
 - If the contract was previously project-owned, `projectId` is now 0 (project ownership is cleared)
@@ -104,19 +102,8 @@ The contract is owned by whichever address holds the project NFT. If the NFT is 
 
 **Who can call**: The current owner (resolved via `PROJECTS.ownerOf()` if project-owned, or `jbOwner.owner` if address-owned), or any address with the configured `permissionId` (or ROOT) via `JBPermissions`.
 
-The target project exists (ID <= `PROJECTS.count()`). The caller is the current owner or has adequate permissions.
-
-### Steps
-
-1. **`_checkOwner()` validates the caller** (same as Journey 2, Step 1)
-
-2. **Owner calls `transferOwnershipToProject(projectId)`**
-
-   - Validates: `projectId != 0` (reverts with `JBOwnableOverrides_InvalidNewOwner`)
-   - Validates: `projectId <= type(uint88).max` (reverts with `JBOwnableOverrides_InvalidNewOwner`)
-   - Validates: `projectId <= PROJECTS.count()` (reverts with `JBOwnableOverrides_ProjectDoesNotExist`)
-
-3. **`_transferOwnership(address(0), uint88(projectId))` executes the transfer**
+**Parameters**:
+- `projectId` -- The ID of the Juicebox project to transfer ownership to (must be non-zero, fit in `uint88`, and refer to an existing project)
 
 **State changes**:
 1. `_checkOwner()` validates the caller
@@ -127,13 +114,14 @@ The target project exists (ID <= `PROJECTS.count()`). The caller is the current 
    - Overwrites `jbOwner = JBOwner({owner: address(0), projectId: uint88(projectId), permissionId: 0})`
    - Calls `_emitTransferEvent(oldOwner, address(0), uint88(projectId))`
 
-**Events**: `OwnershipTransferred(previousOwner: oldOwner, newOwner: PROJECTS.ownerOf(projectId), caller: msg.sender)`
+**Events**: `OwnershipTransferred(address indexed previousOwner, address indexed newOwner, address caller)` -- emitted as `OwnershipTransferred(oldOwner, PROJECTS.ownerOf(projectId), msg.sender)`
 
 **Edge cases**:
 - The project existence check (`projectId <= PROJECTS.count()`) prevents transferring to a nonexistent project
 - The `uint88` cast does not truncate (the preceding `type(uint88).max` check ensures this)
 - `permissionId` is reset to 0 on transfer. The new project owner must call `setPermissionId()` to configure delegation.
 - If the project NFT is subsequently burned (hypothetically), `owner()` returns `address(0)` and the contract is effectively renounced
+- Unlike the constructor, `_emitTransferEvent` calls `PROJECTS.ownerOf(newProjectId)` without try-catch -- if the project does not exist, the transaction reverts. This is intentional: the `PROJECTS.count()` check above prevents this path.
 
 ---
 
@@ -150,7 +138,7 @@ The target project exists (ID <= `PROJECTS.count()`). The caller is the current 
 1. `_checkOwner()` validates the caller
 2. `_setPermissionId(permissionId)` writes `jbOwner.permissionId = permissionId`
 
-**Events**: `PermissionIdChanged(newId: permissionId, caller: msg.sender)`
+**Events**: `PermissionIdChanged(uint8 newId, address caller)` -- emitted as `PermissionIdChanged(permissionId, msg.sender)`
 
 **Granting the permission to operators** (external step, not on JBOwnable):
 - The owner calls `permissions.setPermissionsFor(account, JBPermissionsData({operator: operatorAddress, projectId: projectId, permissionIds: [permissionId]}))` on the `JBPermissions` contract
@@ -179,7 +167,7 @@ The target project exists (ID <= `PROJECTS.count()`). The caller is the current 
    - Overwrites `jbOwner = JBOwner({owner: address(0), projectId: 0, permissionId: 0})`
    - Calls `_emitTransferEvent(oldOwner, address(0), 0)`
 
-**Events**: `OwnershipTransferred(previousOwner: oldOwner, newOwner: address(0), caller: msg.sender)`
+**Events**: `OwnershipTransferred(address indexed previousOwner, address indexed newOwner, address caller)` -- emitted as `OwnershipTransferred(oldOwner, address(0), msg.sender)`
 
 **Edge cases**:
 - After renouncing, `transferOwnership`, `transferOwnershipToProject`, `setPermissionId`, and `renounceOwnership` all revert
@@ -206,21 +194,7 @@ The target project exists (ID <= `PROJECTS.count()`). The caller is the current 
 
 **Events**: None (no transaction occurs on the JBOwnable contract).
 
-2. **`owner()` catches the revert and returns `address(0)`**
-
-   - The try-catch in `owner()` returns `address(0)` when `ownerOf` reverts
-
-3. **`_checkOwner()` catches the revert and resolves owner to `address(0)`**
-
-   - `_requirePermissionFrom(address(0), projectId, permissionId)` is called
-   - No `msg.sender` can equal `address(0)`, so the check always fails
-
-### Result
-
-The contract is effectively renounced without anyone calling `renounceOwnership()`. All `onlyOwner` functions permanently revert. The `jbOwner` struct still contains the old `projectId`, but it has no practical effect.
-
-### What to verify
-
-- If re-minting an NFT with the same ID were possible, it would restore ownership (the `jbOwner.projectId` is still set). However, JBProjects V6 has no burn or re-mint mechanism, so this scenario is purely hypothetical.
-- The `jbOwner` struct is NOT cleared in this scenario -- it still shows the old `projectId`. Only the resolved owner is `address(0)`.
-- This behavior is consistent between `owner()` and `_checkOwner()` (both use the same try-catch pattern).
+**Edge cases**:
+- There is no way to "revive" ownership after the NFT is burned. However, re-minting an NFT with the same ID (if possible) would restore ownership.
+- The `jbOwner` struct is NOT cleared -- it still shows the old `projectId`. Only the resolved owner is `address(0)`.
+- This behavior is consistent between `owner()` and `_checkOwner()` (both use the same try-catch pattern)
