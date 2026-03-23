@@ -19,7 +19,7 @@ Concrete end-to-end flows through the JBOwnable system. Each journey traces the 
 **State changes**:
 1. `PROJECTS` immutable set to `projects`
 2. `PERMISSIONS` immutable set to `permissions` (inherited from `JBPermissioned`)
-3. Constructor validates `initialProjectIdOwner != 0` AND `address(projects) != address(0)` (reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner` if violated)
+3. Constructor validates that if `initialProjectIdOwner != 0`, then `address(projects) != address(0)` (reverts with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner` if the project ID is non-zero but the projects contract is the zero address). There is no project existence check in the constructor.
 4. Constructor validates that at least one of `initialOwner` or `initialProjectIdOwner` is non-zero (reverts with `JBOwnableOverrides_InvalidNewOwner` if both are zero)
 5. `_transferOwnership(address(0), projectId)` executes:
    - Sets `jbOwner = JBOwner({owner: address(0), projectId: projectId, permissionId: 0})`
@@ -147,7 +147,7 @@ Concrete end-to-end flows through the JBOwnable system. Each journey traces the 
 **Edge cases**:
 - `permissionId == 0` effectively disables delegation (permission ID 0 cannot be set in `JBPermissions`). Only the owner (or ROOT holders) can call `onlyOwner` functions.
 - If the owner transfers ownership, `permissionId` resets to 0. The new owner must re-configure delegation.
-- ROOT (permission ID 1) always grants access regardless of the configured `permissionId`. This is a feature of `JBPermissioned`, not specific to `JBOwnable`.
+- ROOT (permission ID 1) bypasses the configured `permissionId` check, but only when the operator has been granted ROOT **by the resolved owner** via `JBPermissions`. ROOT is not a global override -- it is scoped to the `account` (i.e. the resolved owner) that granted it. This is a feature of `JBPermissioned`, not specific to `JBOwnable`. After renouncement (resolved owner = `address(0)`), ROOT cannot help because no one can obtain permissions granted by `address(0)`.
 - The operator's access is not stored on the JBOwnable contract -- it lives in JBPermissions. Changing the `permissionId` on JBOwnable instantly changes which JBPermissions grants are recognized.
 
 ---
@@ -173,7 +173,7 @@ Concrete end-to-end flows through the JBOwnable system. Each journey traces the 
 - After renouncing, `transferOwnership`, `transferOwnershipToProject`, `setPermissionId`, and `renounceOwnership` all revert
 - There is no recovery mechanism. No admin backdoor. No timelock. Renouncement is permanent.
 - A second call to `renounceOwnership()` also reverts (because `_checkOwner()` fails)
-- Even ROOT holders cannot act as owner after renouncement, because `_requirePermissionFrom(address(0), 0, 0)` does not recognize ROOT as a valid bypass when the account is `address(0)`
+- Even ROOT holders cannot act as owner after renouncement. Although `_requirePermissionFrom(address(0), 0, 0)` is called with `includeRoot: true`, no operator can possess ROOT (or any permission) granted by `address(0)` -- `JBPermissions.setPermissionsFor` requires the caller to be the account or an existing ROOT operator of the account, and no one starts with permissions from `address(0)`
 
 ---
 
@@ -190,7 +190,7 @@ Concrete end-to-end flows through the JBOwnable system. Each journey traces the 
 **State changes**:
 1. `PROJECTS.ownerOf(projectId)` starts reverting (ERC-721 `ownerOf` reverts for burned tokens)
 2. `owner()` catches the revert via try-catch and returns `address(0)`
-3. `_checkOwner()` catches the revert and resolves owner to `address(0)`, causing `_requirePermissionFrom(address(0), projectId, permissionId)` to fail for any `msg.sender`
+3. `_checkOwner()` catches the revert and resolves owner to `address(0)`, causing `_requirePermissionFrom(address(0), projectId, permissionId)` to fail for any `msg.sender` -- no operator can possess permissions granted by `address(0)` (same reason as explicit renouncement in Journey 5)
 
 **Events**: None (no transaction occurs on the JBOwnable contract).
 
