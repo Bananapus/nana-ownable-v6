@@ -2,6 +2,40 @@
 
 You are auditing a Juicebox-aware ownership module that extends OpenZeppelin's Ownable pattern. A contract inheriting `JBOwnable` can be owned by a Juicebox project (via its ERC-721 NFT) or a direct address, with delegated access through `JBPermissions`. This is a foundational access control primitive used by hooks and extensions across the Juicebox V6 ecosystem. Read [RISKS.md](./RISKS.md) first -- it documents all known risks and trust assumptions. Then come back here.
 
+## Compiler and Version Info
+
+| Setting | Value |
+|---------|-------|
+| Solidity version | 0.8.26 |
+| EVM target | cancun |
+| Optimizer | enabled, 200 runs |
+| via-IR | not enabled |
+| Fuzz runs | 4,096 |
+| Invariant runs | 1,024 (depth 100) |
+
+Source: [`foundry.toml`](./foundry.toml)
+
+## Previous Audit Findings
+
+A Nemesis automated audit was conducted on 2026-03-17. Results are in [`.audit/findings/nemesis-verified.md`](./.audit/findings/nemesis-verified.md). Summary:
+
+| ID | Severity | Title | Status |
+|----|----------|-------|--------|
+| NM-001 | LOW | Constructor lacks explicit project existence check (informational) | Open (developer experience only, no security impact) |
+| NM-002 | LOW | `_emitTransferEvent` try-catch asymmetry (design tradeoff) | Open (by design -- write operations should revert, not silently emit incorrect events) |
+
+Three false positives were also eliminated during the audit (OOG attack on `_checkOwner`, wildcard permission bypass, permission delegation ownership theft). No CRITICAL, HIGH, or MEDIUM findings were identified.
+
+No prior formal audit with finding IDs from an external security firm has been conducted.
+
+## Error Reference
+
+| Error | Contract | Trigger Condition |
+|-------|----------|-------------------|
+| `JBOwnableOverrides_InvalidNewOwner()` | JBOwnableOverrides | Constructor called with both `initialOwner == address(0)` and `initialProjectIdOwner == 0`; also `transferOwnership` called with `newOwner == address(0)` |
+| `JBOwnableOverrides_ProjectDoesNotExist()` | JBOwnableOverrides | `transferOwnershipToProject` called with `projectId > PROJECTS.count()` (project does not exist) |
+| `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` | JBOwnableOverrides | Constructor called with `initialProjectIdOwner != 0` but `address(projects) == address(0)` |
+
 ## Scope
 
 **In scope -- all Solidity in `src/`:**
@@ -126,8 +160,26 @@ forge test --match-contract OwnableInvariant -vvv
 # Run regression tests
 forge test --match-path test/regression/ -vvv
 
-# Write a PoC
-forge test --match-path test/audit/ExploitPoC.t.sol -vvv
+# Write a PoC (create test/YourExploit.t.sol)
+forge test --match-path test/YourExploit.t.sol -vvv
 ```
+
+## How to Report Findings
+
+**Severity guide:**
+- **CRITICAL**: Direct fund loss, permanent DoS, or broken core invariant. Exploitable with no preconditions.
+- **HIGH**: Conditional fund loss, privilege escalation, or broken invariant. Requires specific but realistic setup.
+- **MEDIUM**: Value leakage, griefing with cost to attacker, incorrect accounting, degraded functionality.
+- **LOW**: Informational, cosmetic, edge-case-only with no material impact.
+
+For each finding:
+
+1. **Title** -- one line, starts with severity (CRITICAL/HIGH/MEDIUM/LOW)
+2. **Affected contract(s)** -- exact file path and line numbers
+3. **Description** -- what's wrong, in plain language
+4. **Trigger sequence** -- step-by-step, minimal steps to reproduce
+5. **Impact** -- what an attacker gains, what a user loses (with numbers if possible)
+6. **Proof** -- code trace showing the exact execution path, or a Foundry test
+7. **Fix** -- minimal code change that resolves the issue
 
 Go break it.
