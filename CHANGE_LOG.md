@@ -2,6 +2,12 @@
 
 This document describes all changes between `nana-ownable` (v5) and `nana-ownable-v6` (v6).
 
+## Summary
+
+- **Defensive `try-catch` on all `PROJECTS.ownerOf()` calls**: `owner()` now returns `address(0)` instead of reverting for burned/invalid project NFTs — changes observable behavior for callers.
+- **New safety validations**: `transferOwnershipToProject()` checks project existence; constructor rejects zero-address `PROJECTS` with project-based ownership.
+- **Solidity version pinned**: Changed from floating `^0.8.23` to exact `0.8.26`.
+
 ---
 
 ## 1. Breaking Changes
