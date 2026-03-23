@@ -15,27 +15,6 @@ You are auditing a Juicebox-aware ownership module that extends OpenZeppelin's O
 
 Source: [`foundry.toml`](./foundry.toml)
 
-## Previous Audit Findings
-
-A Nemesis automated audit was conducted on 2026-03-17. Results are in [`.audit/findings/nemesis-verified.md`](./.audit/findings/nemesis-verified.md). Summary:
-
-| ID | Severity | Title | Status |
-|----|----------|-------|--------|
-| NM-001 | LOW | Constructor lacks explicit project existence check (informational) | Open (developer experience only, no security impact) |
-| NM-002 | LOW | `_emitTransferEvent` try-catch asymmetry (design tradeoff) | Open (by design -- write operations should revert, not silently emit incorrect events) |
-
-Three false positives were also eliminated during the audit (OOG attack on `_checkOwner`, wildcard permission bypass, permission delegation ownership theft). No CRITICAL, HIGH, or MEDIUM findings were identified.
-
-No prior formal audit with finding IDs from an external security firm has been conducted.
-
-## Error Reference
-
-| Error | Contract | Trigger Condition |
-|-------|----------|-------------------|
-| `JBOwnableOverrides_InvalidNewOwner()` | JBOwnableOverrides | Constructor called with both `initialOwner == address(0)` and `initialProjectIdOwner == 0`; also `transferOwnership` called with `newOwner == address(0)` |
-| `JBOwnableOverrides_ProjectDoesNotExist()` | JBOwnableOverrides | `transferOwnershipToProject` called with `projectId > PROJECTS.count()` (project does not exist) |
-| `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner()` | JBOwnableOverrides | Constructor called with `initialProjectIdOwner != 0` but `address(projects) == address(0)` |
-
 ## Scope
 
 **In scope -- all Solidity in `src/`:**
@@ -204,17 +183,5 @@ For each finding:
 5. **Impact** -- what an attacker gains, what a user loses (with numbers if possible)
 6. **Proof** -- code trace showing the exact execution path, or a Foundry test
 7. **Fix** -- minimal code change that resolves the issue
-
-## Compiler and Version Info
-
-From `foundry.toml`:
-
-| Setting | Value |
-|---------|-------|
-| Solidity version | `0.8.26` |
-| EVM target | `cancun` |
-| Optimizer | Enabled, 200 runs |
-| Fuzz runs | 4,096 |
-| Invariant runs | 1,024 (depth 100) |
 
 Go break it.
