@@ -51,6 +51,25 @@ JBOwner {
 
 **Ownership transfer resets `permissionId` to 0.** This prevents the previous owner's delegates from retaining access after a transfer. The new owner must explicitly call `setPermissionId()` to configure delegation.
 
+## Usage Pattern
+
+Contracts inherit from `JBOwnable` to bridge Juicebox project ownership into the standard `onlyOwner` modifier pattern. The typical usage:
+
+```solidity
+contract MyHook is JBOwnable {
+    function adjustTiers(...) external onlyOwner {
+        // Only the resolved owner (or a permission delegate) can call this
+    }
+}
+```
+
+The `onlyOwner` modifier calls `_checkOwner()`, which resolves the current owner (via project NFT or direct address) and checks `_requirePermissionFrom()`. This means every `onlyOwner` function automatically supports:
+- Direct ownership (EOA or contract)
+- Project-based ownership (holder of the project NFT)
+- Permission delegation (via the configured `permissionId` through `JBPermissions`)
+
+**Practical example:** `JB721TiersHook` inherits `JBOwnable`. During deployment, ownership is transferred to the project via `transferOwnershipToProject(projectId)`. The project NFT holder then becomes the hook's owner, and they can delegate specific hook permissions to operators via `JBPermissions`.
+
 ## Immutable Configuration
 
 | Property | Set At | Can Change? |
@@ -73,3 +92,4 @@ What admins **cannot** do:
 - **Undo `renounceOwnership()`.** Once ownership is renounced, all `onlyOwner` functions are permanently disabled. There is no recovery mechanism.
 - **Bypass `JBPermissions` for delegation.** Permission delegation is exclusively handled through the external `JBPermissions` contract; `JBOwnable` itself has no operator registry.
 - **Prevent project NFT transfers from changing ownership.** When owned by a project, whoever holds the `JBProjects` ERC-721 is the owner. There is no veto or lock mechanism within `JBOwnable`.
+- **Project ownership resolution can fail.** When owned by a project (`projectId != 0`), `owner()` calls `PROJECTS.ownerOf(projectId)`. If this call reverts (e.g., the project NFT is held by a contract that rejects ERC-721 queries), the resolved owner becomes `address(0)`, effectively and permanently renouncing the contract. This is an edge case but has no recovery path.
