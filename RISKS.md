@@ -9,12 +9,15 @@
 ## 2. Known Risks
 
 - **Project NFT transfer = ownership transfer.** If ownership is tied to a project ID, anyone who acquires the project NFT (via transfer, marketplace purchase, or social engineering) gains full owner access to all contracts using that JBOwnable instance. Project NFT holders must treat the NFT as a high-value key.
-- **Permission ID reset on transfer.** `permissionId` resets to 0 on ownership transfer, which could temporarily lock out delegated operators. By design -- prevents permission clashes for new owners.
-- **Burned/invalid project NFT.** If the project NFT is burned or `ownerOf` reverts, the contract is effectively renounced (owner resolves to `address(0)`). Defensive try-catch in `owner()` and `_checkOwner()`. JBProjects V6 has no burn function, so this is a defensive measure.
 - **Dual ownership ambiguity.** Setting both `newOwner` and `projectId` to non-zero reverts, but the two-mode design could confuse integrators about which mode is active. `jbOwner()` exposes both fields for inspection.
-- **`transferOwnershipToProject` with future project.** Checks `projectId > PROJECTS.count()` to prevent transferring to non-existent projects.
 
-## 3. Invariants to Verify
+## 3. Accepted Behaviors
+
+- **Permission ID reset on transfer.** `permissionId` resets to 0 on ownership transfer, which temporarily locks out delegated operators. This is intentional -- it prevents permission clashes for new owners.
+- **Burned/invalid project NFT.** If the project NFT were burned or `ownerOf` reverted, the contract would be effectively renounced (owner resolves to `address(0)`). Defensive try-catch in `owner()` and `_checkOwner()` handles this gracefully. JBProjects V6 has no burn function, so this scenario cannot occur in practice.
+- **`transferOwnershipToProject` rejects non-existent projects.** The function checks `projectId > PROJECTS.count()` and reverts, preventing transfers to non-existent projects.
+
+## 4. Invariants to Verify
 
 - Ownership is always exactly one of: direct address OR project NFT holder (never both, never neither unless renounced).
 - `_checkOwner()` reverts for all callers when the owner resolves to `address(0)`.
