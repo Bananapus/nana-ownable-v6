@@ -6,7 +6,7 @@ This document describes all changes between `nana-ownable` (v5) and `nana-ownabl
 
 - **Defensive `try-catch` on all `PROJECTS.ownerOf()` calls**: `owner()` now returns `address(0)` instead of reverting for burned/invalid project NFTs — changes observable behavior for callers.
 - **New safety validations**: `transferOwnershipToProject()` checks project existence; constructor rejects zero-address `PROJECTS` with project-based ownership.
-- **Solidity version pinned**: Changed from floating `^0.8.23` to exact `0.8.26`.
+- **Solidity version pinned**: Changed from floating `^0.8.23` to exact `^0.8.26`.
 
 ---
 
@@ -14,7 +14,7 @@ This document describes all changes between `nana-ownable` (v5) and `nana-ownabl
 
 ### Solidity Version Pinned
 
-All contracts changed from `pragma solidity ^0.8.23` (floating) to `pragma solidity 0.8.26` (pinned). This means v6 can only compile with Solidity 0.8.26 exactly.
+All contracts changed from `pragma solidity ^0.8.23` (floating) to `pragma solidity ^0.8.26` (pinned). This means v6 can only compile with Solidity ^0.8.26 exactly.
 
 **Affected files:** `JBOwnable.sol`, `JBOwnableOverrides.sol`
 
@@ -222,7 +222,7 @@ All internal function calls in v6 use named arguments (e.g., `_transferOwnership
 
 | v5 | v6 | Change Type |
 |---|---|---|
-| `pragma solidity ^0.8.23` | `pragma solidity 0.8.26` | Pinned compiler version |
+| `pragma solidity ^0.8.23` | `pragma solidity ^0.8.26` | Pinned compiler version |
 | `@bananapus/core-v5` imports | `@bananapus/core-v6` imports | Dependency upgrade |
 | `PROJECTS.ownerOf()` called directly | `try PROJECTS.ownerOf() catch` in `owner()`, `_checkOwner()`, `_transferOwnership()` | Defensive error handling |
 | `transferOwnershipToProject()` -- no existence check | Reverts with `JBOwnableOverrides_ProjectDoesNotExist()` if `projectId > PROJECTS.count()` | New validation |

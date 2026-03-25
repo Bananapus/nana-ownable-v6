@@ -388,9 +388,7 @@ contract OwnableEdgeCases is Test {
         emit IJBOwnable.OwnershipTransferred(alice, bob, alice);
 
         // Forwarder calls transferOwnership with alice's address appended (ERC-2771 style).
-        bytes memory callData = abi.encodeWithSelector(
-            IJBOwnable.transferOwnership.selector, bob
-        );
+        bytes memory callData = abi.encodeWithSelector(IJBOwnable.transferOwnership.selector, bob);
         bytes memory forwardedCallData = abi.encodePacked(callData, alice);
 
         vm.prank(forwarder);
@@ -413,9 +411,7 @@ contract OwnableEdgeCases is Test {
         emit IJBOwnable.PermissionIdChanged(42, alice);
 
         // Forwarder calls setPermissionId with alice's address appended.
-        bytes memory callData = abi.encodeWithSelector(
-            IJBOwnable.setPermissionId.selector, uint8(42)
-        );
+        bytes memory callData = abi.encodeWithSelector(IJBOwnable.setPermissionId.selector, uint8(42));
         bytes memory forwardedCallData = abi.encodePacked(callData, alice);
 
         vm.prank(forwarder);
