@@ -28,7 +28,18 @@
 2. Grant that permission through `JBPermissions` to the desired operator.
 3. `JBOwnableOverrides` treats the operator as satisfying `onlyOwner` for that contract while ordinary project ownership remains unchanged.
 
-## Journey 3: Transfer Or Burn Ownership Deliberately
+## Journey 3: Change The Delegated Permission ID Without Changing Ownership
+
+**Starting state:** the contract should still follow the same owner, but the permission bit that grants delegated `onlyOwner` access needs to change.
+
+**Success:** delegation policy changes without changing the underlying owner address or project.
+
+**Flow**
+1. Call the permission-ID update surface as the current effective owner.
+2. Re-grant the new permission through `JBPermissions` to whatever operators should retain access.
+3. Re-audit operator assumptions because old delegations no longer satisfy `onlyOwner` once the ID changes.
+
+## Journey 4: Transfer Or Burn Ownership Deliberately
 
 **Starting state:** the downstream contract's admin model needs to change permanently.
 
@@ -36,8 +47,9 @@
 
 **Flow**
 1. Transfer to a different project or address if governance should continue elsewhere.
-2. Burn or renounce only when permanent admin loss is an intentional outcome.
-3. Audit downstream assumptions first because some integrations cannot function once ownership is gone.
+2. Remember that ownership transfers reset the delegated permission ID, so delegation policy must be re-established on the new owner if needed.
+3. Burn or renounce only when permanent admin loss is an intentional outcome.
+4. Audit downstream assumptions first because some integrations cannot function once ownership is gone.
 
 ## Hand-Offs
 
