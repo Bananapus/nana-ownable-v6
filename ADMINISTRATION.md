@@ -2,6 +2,32 @@
 
 Admin privileges and their scope in nana-ownable-v6.
 
+## At A Glance
+
+| Item | Details |
+|------|---------|
+| Scope | Ownership bridging between direct addresses, Juicebox project NFTs, and delegated owner-equivalent permissions. |
+| Operators | The resolved owner, which may be a direct address or the holder of a project NFT, plus delegates with the configured permission ID. |
+| Highest-risk actions | Renouncing ownership, transferring ownership without re-establishing the intended permission ID, or moving ownership to the wrong project. |
+| Recovery posture | Immutable dependencies cannot be changed. Once ownership is renounced, there is no in-contract recovery path. |
+
+## Routine Operations
+
+- After any ownership transfer, explicitly confirm whether delegation should be re-enabled with `setPermissionId()`.
+- When using project-based ownership, remember that control follows the project NFT holder automatically.
+- Grant the narrowest practical permission ID to delegates because `JBOwnable` treats that ID as owner-equivalent for the inheriting contract.
+
+## One-Way Or High-Risk Actions
+
+- `renounceOwnership()` permanently disables every `onlyOwner` surface on the inheriting contract.
+- Ownership transfers reset `permissionId` to `0`, which immediately changes the delegate set.
+- Project-based ownership inherits all the operational risk of transferring the underlying project NFT.
+
+## Recovery Notes
+
+- If ownership was transferred to the wrong live owner or project and the current owner still controls it, fix it with another ownership transfer.
+- If ownership was renounced or the immutable `PERMISSIONS`/`PROJECTS` references are wrong, recovery requires deploying a replacement contract.
+
 ## Roles
 
 | Role | Who | How Access Is Determined |

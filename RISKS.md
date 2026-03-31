@@ -1,4 +1,21 @@
-# RISKS.md -- nana-ownable-v6
+# Juicebox Ownable Risk Register
+
+This file focuses on the ownership-model risks in `JBOwnable`: dynamic ownership through project NFTs, delegated owner authority, and the mismatch between EOA-style expectations and Juicebox project control.
+
+## How to use this file
+
+- Read `Priority risks` first; most failures here are authority-model misunderstandings rather than arithmetic bugs.
+- Use the detailed sections to understand what changes when ownership follows a project instead of a fixed address.
+- Treat `Invariants to Verify` as the minimal proof that owner resolution stays coherent.
+
+## Priority risks
+
+| Priority | Risk | Why it matters | Primary controls |
+|----------|------|----------------|------------------|
+| P1 | Misunderstanding dynamic owner resolution | Ownership can move when the project NFT moves or when permissions change, surprising integrators that expect static `Ownable` semantics. | Clear docs, careful integration review, and explicit tests around ownership transfer paths. |
+| P1 | Over-broad delegated owner permissions | `JBPermissions` can broaden who effectively acts as owner; sloppy configuration expands blast radius fast. | Permission hygiene and explicit review of delegated owner grants. |
+| P2 | Interoperability assumptions with standard `Ownable` tooling | Some tooling assumes `owner()` maps to one address with no external permission system behind it. | Integration testing with downstream tooling and documentation of semantic differences. |
+
 
 ## 1. Trust Assumptions
 

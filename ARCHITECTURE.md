@@ -1,63 +1,52 @@
-# nana-ownable-v6 — Architecture
+# Architecture
 
 ## Purpose
 
-Juicebox-aware ownership module. Extends OpenZeppelin's Ownable pattern to support ownership by either a Juicebox project (via ERC-721) or a direct address, with permission delegation through JBPermissions. The primary use case is contracts like `JB721TiersHook` that inherit `JBOwnable` so they can be owned by a Juicebox project rather than just an EOA -- ownership automatically follows the project's ERC-721 token without requiring manual transfers when the project changes hands.
+`nana-ownable-v6` adapts `Ownable` to the Juicebox model. A contract can be owned by an address or by a Juicebox project NFT, and delegated operators can satisfy `onlyOwner` via `JBPermissions`.
 
-## Contract Map
+## Boundaries
 
-```
-src/
-├── JBOwnable.sol            — Concrete ownable with constructor
-├── JBOwnableOverrides.sol   — Abstract base with onlyOwner modifier logic
-├── interfaces/
-│   └── IJBOwnable.sol       — Interface for ownership queries and transfers
-└── structs/
-    └── JBOwner.sol          — Owner struct: {owner, projectId, permissionId}
-```
+- The repo only solves ownership resolution and owner delegation.
+- It does not create a new permission system; it reuses `JBPermissions`.
+- It should remain a drop-in ownership primitive, not a product-specific policy layer.
 
-## Ownership Model
+## Main Components
 
-```
-JBOwner {
-  address owner;       — Direct owner address (if projectId == 0)
-  uint88 projectId;    — JB project ID whose NFT holder is owner (if != 0)
-  uint8 permissionId;  — Permission ID that grants owner access via JBPermissions
-}
+| Component | Responsibility |
+| --- | --- |
+| `JBOwnable` | Concrete inheritance target with the standard `onlyOwner` surface |
+| `JBOwnableOverrides` | Core ownership resolution, transfer, renounce, and permission-ID logic |
+| `JBOwner` | Packed owner state: address owner, project owner, and delegated permission ID |
+| `IJBOwnable` | Public interface and events |
 
-Resolution order:
-1. If projectId != 0 → owner = JBProjects.ownerOf(projectId)
-2. If projectId == 0 → owner = JBOwner.owner address
-3. Additional access via JBPermissions.hasPermission(operator, owner, projectId, permissionId)
+## Runtime Model
+
+```text
+onlyOwner check
+  -> read packed owner state
+  -> if project-owned, resolve the current project NFT holder
+  -> otherwise use the stored owner address
+  -> allow the resolved owner or an operator with the configured JB permission
 ```
 
-## Key Operations
+## Critical Invariants
 
-### Ownership Transfer
-```
-Current owner → transferOwnership(newOwner)
-  → Can transfer to address or project ID
-  → Emits OwnershipTransferred
+- Ownership must resolve dynamically when tied to a project NFT.
+- The delegated permission ID resets on ownership transfer so an old operator set does not silently carry over.
+- A burned or otherwise unresolvable project NFT effectively renounces ownership for contracts tied to that project.
 
-Current owner → renounceOwnership()
-  → Sets owner to address(0), projectId to 0
-  → Permanently disables owner-only functions
-```
+## Where Complexity Lives
 
-## Design Decisions
-
-### Project-as-owner instead of plain OpenZeppelin Ownable
-OpenZeppelin's `Ownable` binds ownership to a single address. In Juicebox, project ownership is represented by an ERC-721 (`JBProjects`), and the owner of that NFT can change over time. `JBOwnable` resolves ownership dynamically via `PROJECTS.ownerOf(projectId)`, so any contract owned by a project automatically tracks whoever holds the project NFT. This avoids the need to manually call `transferOwnership` on every peripheral contract when a project changes hands.
-
-### `permissionId` in the owner struct
-The `JBOwner` struct includes a `uint8 permissionId` that the owner can configure via `setPermissionId()`. This lets the owner delegate access to specific addresses through `JBPermissions` without transferring ownership itself. For example, a project owner can grant a multisig or automation contract the ability to call `onlyOwner` functions on a hook without giving up project ownership. The permission ID is reset to 0 on every ownership transfer to prevent stale permission grants from carrying over to new owners.
-
-### Abstract base with concrete modifier
-`JBOwnableOverrides` is abstract and omits the `onlyOwner` modifier. The concrete `JBOwnable` adds it. This split exists because some inheriting contracts (like hooks deployed before a project NFT is minted) need to customize `_emitTransferEvent` -- the abstract base lets them override the event emission while reusing all ownership resolution and transfer logic.
-
-### Struct packing
-`JBOwner` packs `address owner` (160 bits), `uint88 projectId`, and `uint8 permissionId` into a single 256-bit storage slot. This means all ownership reads and writes cost one `SLOAD`/`SSTORE`, which matters because `_checkOwner` runs on every guarded call.
+- Most of the subtlety is in ownership resolution edge cases, not in the surface API.
+- Permission delegation is simple conceptually but security-sensitive in practice because it composes with a global permission registry.
 
 ## Dependencies
-- `@bananapus/core-v6` — JBPermissioned, IJBProjects, IJBPermissions
-- `@openzeppelin/contracts` — Context
+
+- `nana-core-v6` `JBProjects` and `JBPermissions`
+- OpenZeppelin `Context` compatibility for normal and meta-transaction-aware usage
+
+## Safe Change Guide
+
+- Be conservative with ownership semantics; many repos treat this as infrastructure.
+- If you change event emission or transfer behavior, consider deploy-time wrappers and contracts that override emission.
+- Permission-ID behavior is security-sensitive. Do not turn it into a convenience cache with surprising persistence.
