@@ -2,44 +2,44 @@
 
 ## Who This Repo Serves
 
-- contract authors who want ownership to follow a Juicebox project
-- operators who want delegated `onlyOwner` access without hard-coding one wallet
-- auditors reviewing whether ownership survives project NFT transfers
+- contracts that should be controlled by a Juicebox project instead of a fixed wallet
+- teams delegating `onlyOwner` access to project-scoped operators
+- auditors reviewing whether ownership burn or transfer semantics can strand admin control
 
 ## Journey 1: Give A Contract To A Juicebox Project Instead Of A Wallet
 
-**Starting state:** you are writing or deploying a contract that would normally inherit OpenZeppelin `Ownable`.
+**Starting state:** a downstream contract wants familiar `Ownable` ergonomics, but the true owner should follow a project NFT.
 
-**Success:** control of that contract follows the holder of a project NFT.
+**Success:** `owner()` resolves to the current holder of the configured project instead of a hard-coded address.
 
 **Flow**
-1. Inherit `JBOwnable` instead of plain `Ownable`.
-2. Initialize ownership to a project ID rather than a fixed address.
-3. Whenever `owner()` or `onlyOwner` is evaluated, the contract resolves the current holder of that project NFT.
-4. If the project NFT changes hands, effective ownership follows that new holder without another admin transaction on the owned contract.
+1. Inherit `JBOwnable` or `JBOwnableOverrides` in the downstream contract.
+2. Initialize ownership with the relevant project ID and the `JBProjects` dependency it should consult.
+3. Any later transfer of the project NFT automatically changes who the downstream contract sees as the owner.
 
 ## Journey 2: Delegate Owner-Level Access To Operators
 
-**Starting state:** the project-controlled contract has a real owner but trusted operators also need access.
+**Starting state:** the project owner wants someone other than the NFT holder to satisfy `onlyOwner` for a specific contract.
 
-**Success:** operator access is granted through Juicebox permissions rather than private-key sharing.
-
-**Flow**
-1. Set the `permissionId` that this contract should treat as owner-level access.
-2. Grant that permission through `JBPermissions` to the intended operator addresses.
-3. Those operators can then pass `onlyOwner` checks on this contract.
-4. If ownership moves, the new owner must re-establish the permission mapping they want.
-
-## Journey 3: Understand The Failure Mode Of Burned Ownership
-
-**Starting state:** ownership is tied to a project NFT.
-
-**Success:** you know the irreversible edge case before you adopt the pattern.
+**Success:** delegated operators can use the contract through a single permission ID instead of blanket ownership transfer.
 
 **Flow**
-1. If the project NFT becomes unreachable or burned, owner resolution falls through to `address(0)`.
-2. `onlyOwner` calls then become impossible.
-3. In practice, this behaves like permanent renunciation.
+1. Choose the permission ID the downstream contract should respect.
+2. Grant that permission through `JBPermissions` to the desired operator.
+3. `JBOwnableOverrides` treats the operator as satisfying `onlyOwner` for that contract while ordinary project ownership remains unchanged.
 
-**Use this repo when:** ownership should follow project governance.
-**Do not use it when:** you need a recoverable admin path after project-NFT loss.
+## Journey 3: Transfer Or Burn Ownership Deliberately
+
+**Starting state:** the downstream contract's admin model needs to change permanently.
+
+**Success:** ownership changes happen with a clear understanding of whether control remains recoverable.
+
+**Flow**
+1. Transfer to a different project or address if governance should continue elsewhere.
+2. Burn or renounce only when permanent admin loss is an intentional outcome.
+3. Audit downstream assumptions first because some integrations cannot function once ownership is gone.
+
+## Hand-Offs
+
+- Use [nana-core-v6](../nana-core-v6/USER_JOURNEYS.md) for the project-NFT and permission machinery this adapter depends on.
+- Use [nana-permission-ids-v6](../nana-permission-ids-v6/USER_JOURNEYS.md) if you need the shared numeric permission vocabulary for delegated `onlyOwner` checks.
