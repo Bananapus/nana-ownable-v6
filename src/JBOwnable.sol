@@ -70,10 +70,17 @@ contract JBOwnable is JBOwnableOverrides {
         virtual
         override
     {
-        emit OwnershipTransferred({
-            previousOwner: previousOwner,
-            newOwner: newProjectId == 0 ? newOwner : PROJECTS.ownerOf(newProjectId),
-            caller: _msgSender()
-        });
+        address resolvedNewOwner = newOwner;
+        if (newProjectId != 0) {
+            try PROJECTS.ownerOf(newProjectId) returns (address projectOwner) {
+                resolvedNewOwner = projectOwner;
+            } catch {
+                // Allow constructor-time handoff to an unminted project. Ownership resolves dynamically
+                // once the project NFT exists, so the transfer event uses address(0) until then.
+                resolvedNewOwner = address(0);
+            }
+        }
+
+        emit OwnershipTransferred({previousOwner: previousOwner, newOwner: resolvedNewOwner, caller: _msgSender()});
     }
 }
