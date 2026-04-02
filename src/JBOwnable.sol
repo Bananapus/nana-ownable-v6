@@ -59,8 +59,8 @@ contract JBOwnable is JBOwnableOverrides {
     /// @dev This function exists because some contracts need to deploy contracts for a project before the project's NFT
     /// has been minted, so the transfer event resolves the project's current owner at emission time.
     /// @dev Unlike `_transferOwnership` (which uses try-catch to resolve the *old* owner in case its project NFT was
-    /// burned), this function intentionally lets `PROJECTS.ownerOf(newProjectId)` revert if the new project doesn't
-    /// exist. A revert here is desirable — it prevents transferring ownership to a non-existent project.
+    /// burned), this function resolves the *new* owner's current address for event purposes only.
+    /// If the new project NFT does not exist yet, the event uses `address(0)` until ownership can resolve normally.
     function _emitTransferEvent(
         address previousOwner,
         address newOwner,
