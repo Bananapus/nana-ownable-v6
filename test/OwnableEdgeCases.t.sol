@@ -292,7 +292,23 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 10: Fuzz — transfer to any valid project, verify owner resolution
+    // Test 10: Constructor tolerates an unminted project owner
+    // =========================================================================
+    function test_constructorWithUnmintedProject_emitsZeroOwnerUntilMinted() public {
+        vm.expectEmit(true, true, false, true);
+        emit IJBOwnable.OwnershipTransferred(address(0), address(0), address(this));
+
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(1));
+
+        assertEq(ownable.owner(), address(0), "Owner should resolve to zero before the project exists");
+
+        uint256 projectId = projects.createFor(alice);
+        assertEq(projectId, 1, "Expected the first minted project to match the configured future owner");
+        assertEq(ownable.owner(), alice, "Owner should resolve once the project is minted");
+    }
+
+    // =========================================================================
+    // Test 11: Fuzz — transfer to any valid project, verify owner resolution
     // =========================================================================
     function testFuzz_transferToProject(address projectOwner) public isNotContract(projectOwner) {
         vm.assume(projectOwner != address(0));
@@ -313,7 +329,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 11: Renounced contract cannot reclaim ownership
+    // Test 12: Renounced contract cannot reclaim ownership
     // =========================================================================
     /// @notice After renouncing, no one can call transferOwnership, transferOwnershipToProject,
     ///         setPermissionId, or renounceOwnership again.
@@ -350,7 +366,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 12: _msgSender is NOT ERC2771-aware (design documentation)
+    // Test 13: _msgSender is NOT ERC2771-aware (design documentation)
     // =========================================================================
     /// @notice JBOwnable uses plain Context._msgSender() (returns msg.sender),
     ///         NOT ERC2771Context. This test documents that a trusted forwarder
@@ -374,7 +390,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 13: OwnershipTransferred event uses _msgSender() (L-27 fix)
+    // Test 14: OwnershipTransferred event uses _msgSender() (L-27 fix)
     // =========================================================================
     /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
     ///         the OwnershipTransferred event's caller field should reflect the
@@ -397,7 +413,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 14: PermissionIdChanged event uses _msgSender() (L-27 fix)
+    // Test 15: PermissionIdChanged event uses _msgSender() (L-27 fix)
     // =========================================================================
     /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
     ///         the PermissionIdChanged event's caller field should reflect the
