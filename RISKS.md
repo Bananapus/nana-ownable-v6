@@ -34,6 +34,7 @@ This file focuses on the ownership-model risks in `JBOwnable`: dynamic ownership
 - **Permission ID reset on transfer.** `permissionId` resets to 0 on ownership transfer, which temporarily locks out delegated operators. This is intentional -- it prevents permission clashes for new owners.
 - **Burned/invalid project NFT.** If the project NFT were burned or `ownerOf` reverted, the contract would be effectively renounced (owner resolves to `address(0)`). Defensive try-catch in `owner()` and `_checkOwner()` handles this gracefully. JBProjects V6 has no burn function, so this scenario cannot occur in practice.
 - **`transferOwnershipToProject` rejects non-existent projects.** The function checks `projectId > PROJECTS.count()` and reverts, preventing transfers to non-existent projects.
+- **Constructor pre-binding to a future project ID.** The constructor can intentionally store a project-based owner for a not-yet-minted project ID. This is accepted for deployment flows that also control project-ID reservation or mint sequencing. If integrators do not control who mints that future project first, the first minter of the project NFT becomes owner of the contract.
 
 ## 4. Invariants to Verify
 
