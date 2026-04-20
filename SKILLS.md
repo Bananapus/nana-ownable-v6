@@ -2,8 +2,8 @@
 
 ## Use This File For
 
-- Use this file when the task involves project-based ownership, delegated `onlyOwner` permissions, or how ownership should follow a Juicebox project NFT instead of a fixed wallet.
-- Start here, then decide whether the question is about owner resolution, permission delegation, or ownership transfer semantics. Those surfaces are intentionally compact but security-sensitive.
+- Use this file when the task involves project-based ownership, delegated `onlyOwner` permissions, or ownership that should follow a Juicebox project NFT instead of a fixed wallet.
+- Start here, then decide whether the question is about owner resolution, permission delegation, or ownership transfer semantics.
 
 ## Read This Next
 
@@ -25,7 +25,7 @@
 
 ## Purpose
 
-Ownership adapter for contracts that should follow Juicebox project ownership instead of a fixed address, with optional delegated permission IDs layered on top of the familiar `Ownable` pattern.
+Ownership adapter for contracts that should follow Juicebox project ownership instead of a fixed address, with optional delegated permission IDs on top of the familiar `Ownable` pattern.
 
 ## Reference Files
 
@@ -36,6 +36,6 @@ Ownership adapter for contracts that should follow Juicebox project ownership in
 
 - Start in [`src/JBOwnableOverrides.sol`](./src/JBOwnableOverrides.sol) when the question is about who the effective owner is or why `onlyOwner` passed or failed.
 - Treat ownership transfer and delegated permission resets as security-sensitive.
-- Project-based ownership can intentionally become unusable if it points at an unminted or invalid project. Treat that as a deployment invariant, not a runtime surprise.
+- Project-based ownership can intentionally become unusable if it points at an unminted or invalid project.
 - Unminted or unexpectedly transferred project NFTs can change the effective owner surface. Check the project lifecycle, not just this adapter.
-- When a bug looks like project ownership itself, confirm whether the real source is upstream in `nana-core-v6` rather than this adapter layer.
+- When a bug looks like project ownership itself, confirm whether the real source is upstream in `nana-core-v6` rather than this adapter.

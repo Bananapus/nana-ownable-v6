@@ -11,14 +11,14 @@
 
 ## Purpose
 
-`nana-ownable-v6` does not introduce a new admin surface by itself. It defines how ownership is resolved for other repos. The important control question is how a contract's `owner()` is determined and how delegated permission IDs behave across ownership transfers.
+`nana-ownable-v6` does not add a new admin surface by itself. It defines how ownership is resolved for other repos. The important question is how a contract's `owner()` is determined and how delegated permission IDs behave across ownership transfers.
 
 ## Control Model
 
-- Ownership can be address-based or project-based.
-- Delegated operator checks run through `JBPermissions`.
-- Transfer and renounce semantics are part of the primitive.
-- Permission delegation resets on ownership transfer.
+- ownership can be address-based or project-based
+- delegated operator checks run through `JBPermissions`
+- transfer and renounce semantics are part of the primitive
+- delegated permission resets on ownership transfer
 
 ## Roles
 
@@ -40,34 +40,34 @@ The meaningful control surfaces are inherited by downstream contracts:
 
 ## Immutable And One-Way
 
-- Project ownership changes dynamically with project NFT transfers.
-- Delegated permission ID resets on ownership transfer.
-- Renouncing ownership is final unless the inheriting contract adds a separate recovery path.
+- project ownership changes dynamically with project NFT transfers
+- delegated permission ID resets on ownership transfer
+- renouncing ownership is final unless the inheriting contract adds a separate recovery path
 
 ## Operational Notes
 
-- Treat project-based ownership as live routing, not a snapshot.
-- Do not assume an operator permission survives ownership transfer.
-- Treat `setPermissionId(...)` as a real authority change because it rewires which delegated permission bit counts as owner access.
-- Review the inheriting contract, not just this primitive, to understand the full admin surface.
+- treat project-based ownership as live routing, not a snapshot
+- do not assume an operator permission survives ownership transfer
+- treat `setPermissionId(...)` as a real authority change because it rewires which delegated permission bit counts as owner access
+- review the inheriting contract, not just this primitive, to understand the full admin surface
 
 ## Machine Notes
 
-- Do not conclude authority from this repo alone; follow the inheriting contract's `onlyOwner` surfaces.
-- Treat ownership transfer as potentially changing both the owner identity and the usable delegated permission ID.
-- If the current permission ID is undocumented, inspect `jbOwner.permissionId` before reasoning about delegated owner access.
-- If a downstream repo uses project-based ownership, re-evaluate owner resolution after every project NFT transfer.
+- do not conclude authority from this repo alone; follow the inheriting contract's `onlyOwner` surfaces
+- treat ownership transfer as potentially changing both the owner identity and the usable delegated permission ID
+- if the current permission ID is undocumented, inspect `jbOwner.permissionId` before reasoning about delegated owner access
+- if a downstream repo uses project-based ownership, re-evaluate owner resolution after every project NFT transfer
 
 ## Recovery
 
-- This primitive has no protocol-wide recovery surface.
-- If ownership was transferred to the wrong project or address, recovery depends on the inheriting contract still recognizing the current owner.
+- this primitive has no protocol-wide recovery surface
+- if ownership was transferred to the wrong project or address, recovery depends on the inheriting contract still recognizing the current owner
 
 ## Admin Boundaries
 
-- This repo does not create a new permission namespace.
-- It cannot make an inheriting contract safer than that contract's own privileged functions.
-- It cannot preserve delegated operators across ownership transfer by default.
+- this repo does not create a new permission namespace
+- it cannot make an inheriting contract safer than that contract's own privileged functions
+- it cannot preserve delegated operators across ownership transfer by default
 
 ## Source Map
 
