@@ -1,10 +1,11 @@
 # Audit Instructions
 
-This repo provides ownership helpers that can follow Juicebox project NFTs instead of a fixed EOA. It is a small repo with disproportionate privilege impact.
+This repo provides ownership helpers that can follow Juicebox project NFTs instead of a fixed EOA. It is a small repo with outsized privilege impact.
 
 ## Audit Objective
 
 Find issues that:
+
 - let unauthorized actors satisfy owner checks
 - break ownership updates when a project NFT moves, burns, or locks
 - let override logic produce a different owner than the project system intends
@@ -13,6 +14,7 @@ Find issues that:
 ## Scope
 
 In scope:
+
 - `src/JBOwnable.sol`
 - `src/JBOwnableOverrides.sol`
 - `src/interfaces/`
@@ -25,7 +27,8 @@ In scope:
 
 ## Security Model
 
-These contracts abstract “owner” as a project-based identity. Downstream repos use them to:
+These contracts abstract "owner" as a project-based identity. Downstream repos use them to:
+
 - treat a Juicebox project owner as contract owner
 - apply per-project override rules
 - keep admin power aligned with project NFT ownership instead of a static address
@@ -45,14 +48,12 @@ These contracts abstract “owner” as a project-based identity. Downstream rep
 
 ## Critical Invariants
 
-1. Owner resolution is correct
-For any supported mode, `owner()` or equivalent checks must resolve to the intended authority and no one else.
-
-2. Burn and lock behavior is safe
-If project ownership is intentionally burned or locked, the helper must not accidentally reopen control or brick valid admin paths.
-
-3. Override precedence is coherent
-Overrides must not silently supersede project ownership in cases the design does not permit.
+1. Owner resolution is correct.  
+   For any supported mode, `owner()` and owner checks must resolve to the intended authority and no one else.
+2. Burn and lock behavior is safe.  
+   If project ownership is intentionally burned or locked, the helper must not accidentally reopen control or brick valid admin paths.
+3. Override precedence is coherent.  
+   Overrides must not silently supersede project ownership in cases the design does not permit.
 
 ## Attack Surfaces
 

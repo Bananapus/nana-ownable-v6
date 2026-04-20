@@ -1,6 +1,6 @@
 # Juicebox Ownable
 
-`@bananapus/ownable-v6` is an ownership helper for contracts that should be controlled by a Juicebox project rather than a fixed wallet. It keeps the familiar `Ownable` shape while letting ownership follow a project NFT and optional delegated permissions.
+`@bananapus/ownable-v6` is an ownership helper for contracts that should be controlled by a Juicebox project instead of a fixed wallet. It keeps the familiar `Ownable` shape while letting ownership follow a project NFT and optional delegated permissions.
 
 Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)  
 User journeys: [USER_JOURNEYS.md](./USER_JOURNEYS.md)  
@@ -11,32 +11,32 @@ Audit instructions: [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md)
 
 ## Overview
 
-This package extends the standard ownership model in three useful ways:
+This package extends the standard ownership model in three ways:
 
 - ownership can point to a Juicebox project ID instead of an address
-- `owner()` resolves dynamically to the current holder of that project NFT when the referenced project remains readable
-- delegated operators can satisfy `onlyOwner` through a configurable `JBPermissions` permission ID
+- `owner()` can resolve dynamically to the current holder of that project NFT
+- delegated operators can satisfy `onlyOwner` through a configured `JBPermissions` permission ID
 
-For contracts that are already conceptually "owned by the project," this avoids manual ownership transfers when the project NFT changes hands.
+For contracts that are already meant to be owned by a project, this avoids manual ownership transfers when the project NFT changes hands.
 
-Use this repo when ownership should follow a Juicebox project. Do not use it if plain single-address ownership is good enough; standard `Ownable` is simpler.
+Use this repo when ownership should follow a Juicebox project. Do not use it if plain single-address ownership is enough. Standard `Ownable` is simpler.
 
-If your issue is in project ownership itself, start in `nana-core-v6` and `JBProjects`. This repo starts mattering when another contract wants its own admin surface to follow that project ownership.
+If the issue is in project ownership itself, start in `nana-core-v6` and `JBProjects`. This repo matters when another contract wants its admin surface to follow that project ownership.
 
 ## Key Contracts
 
 | Contract | Role |
 | --- | --- |
-| `JBOwnable` | Concrete contract to inherit when you want Juicebox-aware ownership with the standard `onlyOwner` interface. |
-| `JBOwnableOverrides` | Abstract base that holds the owner-resolution and permission-checking logic. |
+| `JBOwnable` | Concrete contract to inherit when you want Juicebox-aware ownership with a standard `onlyOwner` interface. |
+| `JBOwnableOverrides` | Abstract base that holds owner resolution and delegated-permission logic. |
 | `IJBOwnable` | Interface for queries, transfers, permission ID changes, and events. |
 
 ## Mental Model
 
-This package is a thin ownership adapter:
+This package is a small ownership adapter:
 
 1. resolve who the effective owner is
-2. optionally delegate `onlyOwner` through a permission ID
+2. optionally allow a delegated permission to satisfy `onlyOwner`
 3. preserve an `Ownable`-like interface for downstream contracts
 
 ## Read These Files First
@@ -47,16 +47,16 @@ This package is a thin ownership adapter:
 
 ## Integration Traps
 
-- ownership may resolve to a project NFT holder rather than a fixed address, so caching `owner()` off-chain can become stale
-- `owner()` can resolve to `address(0)` if the referenced project NFT is burned, invalid, or otherwise unreadable, which effectively renounces the contract
+- ownership may resolve to a project NFT holder instead of a fixed address, so caching `owner()` off-chain can go stale
+- `owner()` can resolve to `address(0)` if the referenced project NFT is invalid or unreadable, which effectively renounces the contract
 - delegated operator access depends on a chosen permission ID, not on a generic admin role
 - ownership transfer and permission-ID updates are part of the security model, not just convenience helpers
 
 ## Where State Lives
 
-- effective ownership configuration lives in `JBOwnableOverrides`
-- downstream contract state still lives in the inheriting contract, not in this package
-- project ownership truth lives in `nana-core-v6` when the owner target is a Juicebox project
+- effective ownership configuration: `JBOwnableOverrides`
+- downstream contract state: the inheriting contract
+- project ownership truth: `nana-core-v6` when the owner target is a Juicebox project
 
 ## High-Signal Tests
 
@@ -94,9 +94,9 @@ test/
 ## Risks And Notes
 
 - if ownership is tied to a project NFT and that NFT becomes unreachable, the contract is effectively locked
-- delegated access depends on a chosen permission ID, so collisions with other permission schemes are an operational risk
-- permission IDs reset on ownership transfer, which is safer by default but easy to miss if an integration expects long-lived operator access
-- transferring ownership to a project validates that the project exists, but later project-NFT invalidation can still collapse effective ownership to `address(0)`
+- delegated access depends on a chosen permission ID, so bad permission selection is an operational risk
+- permission IDs reset on ownership transfer, which is safer by default but easy to miss
+- transferring ownership to a project validates that the project exists at transfer time, but later project invalidation can still collapse effective ownership to `address(0)`
 
 ## For AI Agents
 

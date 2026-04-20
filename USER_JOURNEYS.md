@@ -2,9 +2,7 @@
 
 ## Repo Purpose
 
-This repo adapts `Ownable`-style control to Juicebox project ownership and project-scoped operator permissions.
-It is an ownership adapter. It does not replace the underlying ownership or permission registries in
-[nana-core-v6](../nana-core-v6/USER_JOURNEYS.md).
+This repo adapts `Ownable`-style control to Juicebox project ownership and project-scoped operator permissions. It is an ownership adapter. It does not replace the underlying ownership or permission registries in [nana-core-v6](../nana-core-v6/USER_JOURNEYS.md).
 
 ## Primary Actors
 
@@ -31,7 +29,7 @@ It is an ownership adapter. It does not replace the underlying ownership or perm
 **Main Flow**
 1. Inherit `JBOwnable` or `JBOwnableOverrides`.
 2. Initialize ownership with the relevant project ID and `JBProjects` reference.
-3. Let `owner()` resolve through the current project NFT holder rather than a fixed address.
+3. Let `owner()` resolve through the current project NFT holder instead of a fixed address.
 
 **Failure Modes**
 - the contract assumes ordinary `Ownable` transfer semantics after adopting project-based ownership
@@ -59,7 +57,7 @@ It is an ownership adapter. It does not replace the underlying ownership or perm
 **Failure Modes**
 - teams grant a broader permission than intended
 - downstream reviewers forget that `onlyOwner` may resolve through permissions instead of direct ownership
-- operators retain stale permissions after governance changes
+- operators keep stale permissions after governance changes
 
 **Postconditions**
 - the chosen operator can satisfy `onlyOwner` without receiving direct ownership of the project or contract
@@ -99,11 +97,11 @@ It is an ownership adapter. It does not replace the underlying ownership or perm
 **Main Flow**
 1. Use `transferOwnership(...)` for an address owner or `transferOwnershipToProject(...)` for a project owner.
 2. Re-establish delegated permission policy if the new owner still wants operators.
-3. Renounce or burn only when permanent admin loss is intentional.
+3. Renounce only when permanent admin loss is intentional.
 
 **Failure Modes**
 - ownership is burned even though the downstream contract still needs administration
-- teams forget that permission-ID delegation resets across ownership changes
+- teams forget that delegated permissions reset across ownership changes
 
 **Postconditions**
 - control moves to the chosen address or project, or is intentionally removed

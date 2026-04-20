@@ -6,15 +6,17 @@
 
 ## System Overview
 
-The repo is an ownership primitive, not a policy layer. `JBOwnable` exposes a familiar inheritance surface. `JBOwnableOverrides` implements dynamic owner resolution, ownership transfer, renounce behavior, and delegated permission checks. Ownership can follow the current holder of a Juicebox project NFT instead of being fixed to an address.
+This repo is an ownership primitive, not a policy layer. `JBOwnable` gives downstream repos a familiar inheritance surface. `JBOwnableOverrides` implements dynamic owner resolution, ownership transfer, renounce behavior, and delegated permission checks.
+
+Ownership can follow the current holder of a Juicebox project NFT instead of staying fixed to one address.
 
 ## Core Invariants
 
-- Project-owned contracts must resolve the owner dynamically from the current project NFT holder.
-- The delegated permission ID resets on ownership transfer.
-- Pointing ownership at an unminted project can temporarily lock the contract until that project exists.
-- A burned or otherwise unresolvable project NFT effectively renounces ownership.
-- This repo should stay a drop-in primitive, not grow product-specific access rules.
+- project-owned contracts must resolve the owner dynamically from the current project NFT holder
+- the delegated permission ID resets on ownership transfer
+- pointing ownership at an unminted project can temporarily lock the contract until that project exists
+- an invalid or otherwise unresolvable project NFT effectively renounces ownership
+- this repo should stay a drop-in primitive, not grow product-specific access rules
 
 ## Modules
 
@@ -27,9 +29,9 @@ The repo is an ownership primitive, not a policy layer. `JBOwnable` exposes a fa
 
 ## Trust Boundaries
 
-- Ownership resolution depends on `JBProjects` and `JBPermissions` from `nana-core-v6`.
-- This repo does not create a new permission namespace.
-- Contracts that inherit from it may still add policy on top, but the resolution semantics here are infrastructure-level.
+- ownership resolution depends on `JBProjects` and `JBPermissions` from `nana-core-v6`
+- this repo does not create a new permission namespace
+- inheriting contracts may add policy on top, but the resolution semantics here are infrastructure-level
 
 ## Critical Flows
 
@@ -45,20 +47,20 @@ onlyOwner modifier
 
 ## Accounting Model
 
-No treasury accounting lives here. The critical state is ownership resolution data and delegated permission ID.
+No treasury accounting lives here. The important state is ownership resolution data and delegated permission ID.
 
 ## Security Model
 
-- Ownership resolution edge cases are more important than surface API shape.
-- Permission delegation is simple conceptually but security-sensitive because it composes with a global permission registry.
-- Unresolvable project ownership is intentionally fail-closed. If `PROJECTS.ownerOf()` cannot resolve, `onlyOwner` should stop working rather than inventing fallback authority.
+- ownership resolution edge cases matter more than surface API shape
+- permission delegation is simple but security-sensitive because it composes with a global permission registry
+- unresolvable project ownership is intentionally fail-closed
 
 ## Safe Change Guide
 
-- Be conservative with transfer and renounce semantics.
-- If event emission or transfer behavior changes, inspect deployer wrappers and inheriting repos.
-- If project-based ownership semantics change, re-check unminted-project and unresolvable-project behavior explicitly.
-- Do not make delegated permission IDs sticky across ownership transfers.
+- be conservative with transfer and renounce semantics
+- if event emission or transfer behavior changes, inspect deployer wrappers and inheriting repos
+- if project-based ownership semantics change, re-check unminted-project and unresolvable-project behavior explicitly
+- do not make delegated permission IDs sticky across ownership transfers
 
 ## Canonical Checks
 
