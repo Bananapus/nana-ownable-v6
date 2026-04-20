@@ -2,7 +2,7 @@
 
 This repo provides ownership helpers that can follow Juicebox project NFTs instead of a fixed EOA. It is a small repo with disproportionate privilege impact.
 
-## Objective
+## Audit Objective
 
 Find issues that:
 - let unauthorized actors satisfy owner checks
@@ -18,12 +18,30 @@ In scope:
 - `src/interfaces/`
 - `src/structs/`
 
-## System Model
+## Start Here
+
+1. `src/JBOwnable.sol`
+2. `src/JBOwnableOverrides.sol`
+
+## Security Model
 
 These contracts abstract “owner” as a project-based identity. Downstream repos use them to:
 - treat a Juicebox project owner as contract owner
 - apply per-project override rules
 - keep admin power aligned with project NFT ownership instead of a static address
+
+## Roles And Privileges
+
+| Role | Powers | How constrained |
+|------|--------|-----------------|
+| Project NFT owner | Become the effective contract owner | Should update automatically with NFT transfers |
+| Override authority | Set alternative owner resolution where allowed | Must not outrank project ownership unexpectedly |
+
+## Integration Assumptions
+
+| Dependency | Assumption | What breaks if wrong |
+|------------|------------|----------------------|
+| Juicebox project ownership | NFT ownership reflects intended authority | Downstream admin checks drift from reality |
 
 ## Critical Invariants
 
@@ -36,19 +54,15 @@ If project ownership is intentionally burned or locked, the helper must not acci
 3. Override precedence is coherent
 Overrides must not silently supersede project ownership in cases the design does not permit.
 
-## Threat Model
+## Attack Surfaces
 
-Prioritize:
-- zero-address handling
-- NFT transfer edge cases
-- irreversible lock or burn flows
-- meta-transaction context if used by downstream callers
+- owner resolution after project NFT transfer
+- zero-address, burn, and lock states
+- override configuration and precedence
+- downstream assumptions that cache owner state instead of re-reading it
 
-## Build And Verification
+## Verification
 
-Standard workflow:
 - `npm install`
 - `forge build`
 - `forge test`
-
-Good findings in this repo show privilege drift in dependent systems, not just a local discrepancy in a view function.
