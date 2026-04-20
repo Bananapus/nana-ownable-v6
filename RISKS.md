@@ -1,51 +1,51 @@
 # Juicebox Ownable Risk Register
 
-This file focuses on the ownership-model risks in `JBOwnable`: dynamic ownership through project NFTs, delegated owner authority, and the mismatch between EOA-style expectations and Juicebox project control.
+This file covers the ownership-model risks in `JBOwnable`: dynamic ownership through project NFTs, delegated owner authority, and mismatches with standard `Ownable` expectations.
 
-## How to use this file
+## How To Use This File
 
-- Read `Priority risks` first; most failures here are authority-model misunderstandings rather than arithmetic bugs.
-- Use the detailed sections to understand what changes when ownership follows a project instead of a fixed address.
-- Treat `Invariants to Verify` as the minimal proof that owner resolution stays coherent.
+- Read `Priority risks` first. Most failures here come from authority-model mistakes, not arithmetic bugs.
+- Use the later sections to understand what changes when ownership follows a project instead of a fixed address.
+- Treat `Invariants to verify` as the minimum proof that owner resolution stays coherent.
 
-## Priority risks
+## Priority Risks
 
 | Priority | Risk | Why it matters | Primary controls |
 |----------|------|----------------|------------------|
-| P1 | Misunderstanding dynamic owner resolution | Ownership can move when the project NFT moves or when permissions change, surprising integrators that expect static `Ownable` semantics. | Clear docs, careful integration review, and explicit tests around ownership transfer paths. |
-| P1 | Over-broad delegated owner permissions | `JBPermissions` can broaden who effectively acts as owner; sloppy configuration expands blast radius fast. | Permission hygiene and explicit review of delegated owner grants. |
-| P2 | Interoperability assumptions with standard `Ownable` tooling | Some tooling assumes `owner()` maps to one address with no external permission system behind it. | Integration testing with downstream tooling and documentation of semantic differences. |
-
+| P1 | Misunderstanding dynamic owner resolution | Ownership can move when the project NFT moves or when permissions change, which breaks static `Ownable` assumptions. | Clear docs, careful integration review, and explicit tests around transfer paths. |
+| P1 | Over-broad delegated owner permissions | `JBPermissions` can broaden who effectively acts as owner. Bad configuration expands blast radius quickly. | Permission hygiene and explicit review of delegated grants. |
+| P2 | Tooling assumptions about standard `Ownable` | Some tooling assumes `owner()` maps to one address with no external permission system behind it. | Integration testing and clear documentation of the semantic differences. |
 
 ## 1. Trust Assumptions
 
-- **JBPermissions.** Permission checks delegate to JBPermissions contract. A bug in JBPermissions affects all JBOwnable contracts.
-- **JBProjects ERC-721.** When owned by a project, ownership follows the ERC-721 token. Whoever holds the project NFT has owner access.
-- **Permission Delegation.** Anyone granted the configured `permissionId` via JBPermissions gets owner-equivalent access for the scoped function.
-- **Deployment inputs.** If `initialProjectIdOwner != 0`, the constructor assumes `PROJECTS` is non-zero and that deployers understand whether that project already exists yet.
+- **`JBPermissions` works correctly.** A bug there affects every `JBOwnable` contract that relies on delegated owner access.
+- **`JBProjects` ownership is the source of truth.** When a contract is project-owned, whoever holds the project NFT has owner access.
+- **Delegated permission means owner-equivalent access.** Anyone granted the configured `permissionId` through `JBPermissions` can satisfy owner checks for the scoped contract.
+- **Deployment inputs are intentional.** If `initialProjectIdOwner != 0`, deployers must understand whether that project already exists.
 
 ## 2. Known Risks
 
-- **Project NFT transfer = ownership transfer.** If ownership is tied to a project ID, anyone who acquires the project NFT (via transfer, marketplace purchase, or social engineering) gains full owner access to all contracts using that JBOwnable instance. Project NFT holders must treat the NFT as a high-value key.
-- **Dual ownership ambiguity.** Setting both `newOwner` and `projectId` to non-zero reverts, but the two-mode design could confuse integrators about which mode is active. `jbOwner()` exposes both fields for inspection.
-- **`renounceOwnership` permanently disables all owner-gated functions.** Defined directly in `JBOwnableOverrides` (not inherited from OpenZeppelin's `Ownable` -- the contract does not inherit from `Ownable`). Once called, `owner()` returns `address(0)` and all `onlyOwner` / `_checkOwner()` calls revert permanently. There is no recovery mechanism. This applies whether ownership is direct (address) or project-based (project NFT holder).
-- **Constructor pre-binding can intentionally lock the contract.** If a deployer sets `initialProjectIdOwner` to a future project ID, `owner()` resolves to `address(0)` until that project NFT exists. This is a supported deployment pattern, but it means the contract can appear renounced during the gap.
-- **`PROJECTS == address(0)` is fatal for project-owned mode.** The constructor defends against this with `JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner`, but wrappers that abstract deployment should still treat project-owned initialization as a high-signal configuration surface.
+- **Project NFT transfer changes contract ownership.** Anyone who acquires the project NFT gains owner access to contracts using that project-owned mode.
+- **Two ownership modes can confuse integrations.** Setting both `newOwner` and `projectId` is disallowed, but integrators still need to check which mode is active.
+- **`renounceOwnership` is final.** Once called, `owner()` resolves to `address(0)` and owner-gated functions stop working permanently unless a downstream contract adds its own recovery path.
+- **Constructor pre-binding can intentionally lock the contract.** If a deployer points ownership at a future project ID, `owner()` resolves to `address(0)` until that project exists.
+- **`PROJECTS == address(0)` breaks project-owned mode.** The constructor defends against this, but wrappers should still treat it as a high-signal deployment surface.
+- **Unminted project ID ownership.** Contracts using `JBOwnableOverrides` can be configured with an `initialProjectIdOwner` that references a project ID not yet minted. The first account to mint that sequential project ID will become the effective owner of the contract. Deployers must ensure the referenced project ID is already minted, or deploy the ownable contract and the project in the same transaction to prevent front-running.
 
 ## 3. Accepted Behaviors
 
-- **Permission ID reset on transfer.** `permissionId` resets to 0 on ownership transfer, which temporarily locks out delegated operators. This is intentional -- it prevents permission clashes for new owners.
-- **`permissionId = 0` means direct-owner-only mode.** `setPermissionId(0)` is valid and leaves owner access resting only with the resolved owner address or project owner. This is not an error state; it is the explicit way to disable delegated owner operators.
-- **Burned/invalid project NFT.** If the project NFT were burned or `ownerOf` reverted, the contract would be effectively renounced (owner resolves to `address(0)`). Defensive try-catch in `owner()` and `_checkOwner()` handles this gracefully. JBProjects V6 has no burn function, so this scenario cannot occur in practice.
-- **`transferOwnershipToProject` rejects non-existent projects.** The function checks `projectId > PROJECTS.count()` and reverts, preventing transfers to non-existent projects.
-- **Constructor pre-binding to a future project ID.** The constructor can intentionally store a project-based owner for a not-yet-minted project ID. This is accepted for deployment flows that also control project-ID reservation or mint sequencing. If integrators do not control who mints that future project first, the first minter of the project NFT becomes owner of the contract.
-- **Transfer events can temporarily show `address(0)` as the new owner.** When ownership is transferred to an unminted future project ID, `_emitTransferEvent` intentionally emits `address(0)` until the project NFT exists and ownership can resolve dynamically.
+- **Permission ID resets on transfer.** `permissionId` resets to `0` on ownership transfer so old delegated operators do not automatically retain power.
+- **`permissionId = 0` means direct-owner-only mode.** This is a valid configuration, not an error state.
+- **Invalid project ownership resolves fail-closed.** If `ownerOf` cannot resolve, the contract is effectively renounced until ownership becomes readable again.
+- **`transferOwnershipToProject` rejects non-existent projects.** The function checks existence at transfer time.
+- **Constructor pre-binding to a future project ID is supported.** This is useful in controlled deployment flows, but dangerous if the deployer does not control mint sequencing.
+- **Transfer events can temporarily show `address(0)`.** When ownership points to an unminted future project, the transfer event shows `address(0)` until ownership can resolve dynamically.
 
-## 4. Invariants to Verify
+## 4. Invariants To Verify
 
-- Ownership is always exactly one of: direct address OR project NFT holder (never both, never neither unless renounced).
-- `_checkOwner()` reverts for all callers when the owner resolves to `address(0)`.
-- `permissionId` is correctly reset to 0 on every ownership transfer.
-- After `renounceOwnership()`, `jbOwner()` returns `(address(0), 0, 0)` and no address can pass `_checkOwner()`.
-- `transferOwnershipToProject(projectId)` reverts for all `projectId > PROJECTS.count()` at call time.
-- `initialProjectIdOwner != 0` with `PROJECTS == address(0)` always reverts during construction.
+- ownership is always exactly one of: direct address or project NFT holder
+- `_checkOwner()` reverts for all callers when the owner resolves to `address(0)`
+- `permissionId` resets to `0` on every ownership transfer
+- after `renounceOwnership()`, `jbOwner()` returns `(address(0), 0, 0)` and no address can pass `_checkOwner()`
+- `transferOwnershipToProject(projectId)` reverts for all `projectId > PROJECTS.count()` at call time
+- `initialProjectIdOwner != 0` with `PROJECTS == address(0)` always reverts during construction
