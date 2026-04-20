@@ -1,121 +1,79 @@
 # Administration
 
-Admin privileges and their scope in nana-ownable-v6.
-
 ## At A Glance
 
 | Item | Details |
-|------|---------|
-| Scope | Ownership bridging between direct addresses, Juicebox project NFTs, and delegated owner-equivalent permissions. |
-| Operators | The resolved owner, which may be a direct address or the holder of a project NFT, plus delegates with the configured permission ID. |
-| Highest-risk actions | Renouncing ownership, transferring ownership without re-establishing the intended permission ID, or moving ownership to the wrong project. |
-| Recovery posture | Immutable dependencies cannot be changed. Once ownership is renounced, there is no in-contract recovery path. |
+| --- | --- |
+| Scope | Ownership resolution primitive used by downstream repos |
+| Control posture | Primitive only; control depends on the inheriting contract |
+| Highest-risk actions | Transferring ownership to the wrong address or project and assuming delegated operators survive transfer |
+| Recovery posture | Recovery depends on the inheriting contract and the still-recognized current owner |
 
-## Routine Operations
+## Purpose
 
-- After any ownership transfer, explicitly confirm whether delegation should be re-enabled with `setPermissionId()`.
-- When using project-based ownership, remember that control follows the project NFT holder automatically.
-- Grant the narrowest practical permission ID to delegates because `JBOwnable` treats that ID as owner-equivalent for the inheriting contract.
+`nana-ownable-v6` does not introduce a new admin surface by itself. It defines how ownership is resolved for other repos. The important control question is how a contract's `owner()` is determined and how delegated permission IDs behave across ownership transfers.
 
-## One-Way Or High-Risk Actions
+## Control Model
 
-- `renounceOwnership()` permanently disables every `onlyOwner` surface on the inheriting contract.
-- Ownership transfers reset `permissionId` to `0`, which immediately changes the delegate set.
-- Project-based ownership inherits all the operational risk of transferring the underlying project NFT.
-
-## Recovery Notes
-
-- If ownership was transferred to the wrong live owner or project and the current owner still controls it, fix it with another ownership transfer.
-- If ownership was renounced or the immutable `PERMISSIONS`/`PROJECTS` references are wrong, recovery requires deploying a replacement contract.
+- Ownership can be address-based or project-based.
+- Delegated operator checks run through `JBPermissions`.
+- Transfer and renounce semantics are part of the primitive.
+- Permission delegation resets on ownership transfer.
 
 ## Roles
 
-| Role | Who | How Access Is Determined |
-|------|-----|------------------------|
-| **Direct Owner** | An EOA or contract stored in `JBOwner.owner` | Used when `JBOwner.projectId == 0`. Set at construction or via `transferOwnership(address)`. |
-| **Project Owner** | The holder of the `JBProjects` ERC-721 for `JBOwner.projectId` | Used when `JBOwner.projectId != 0`. Resolved dynamically via `PROJECTS.ownerOf(projectId)` on every call. |
-| **Permission Delegate** | Any address granted `JBOwner.permissionId` through `JBPermissions` | The owner (direct or project) calls `JBPermissions.setPermissionsFor(...)` to grant `permissionId` to an operator. That operator then passes the `_checkOwner()` / `_requirePermissionFrom()` check. |
+| Role | How Assigned | Scope | Notes |
+| --- | --- | --- | --- |
+| Direct owner | Stored owner address | Per contract | Standard `Ownable`-like control |
+| Project owner | Holder of the referenced project NFT | Per contract | Dynamic ownership resolution |
+| Delegated operator | `JBPermissions` grant with the configured permission ID | Per contract and project | Only if the inheriting contract enables it |
 
-Only one of Direct Owner or Project Owner is active at a time, never both. Permission Delegates extend whichever mode is active.
+## Privileged Surfaces
 
-## Privileged Functions
+The meaningful control surfaces are inherited by downstream contracts:
 
-### JBOwnableOverrides (abstract base)
+- `setPermissionId(...)`
+- `transferOwnership(...)`
+- `transferOwnershipToProject(...)`
+- `renounceOwnership()`
+- `onlyOwner` checks that resolve either the direct owner or the current project NFT holder
 
-| Function | Required Role | Permission ID | Scope | What It Does |
-|----------|--------------|---------------|-------|--------------|
-| `renounceOwnership()` | Owner or delegate | `jbOwner.permissionId` | Per-contract | Sets `owner` to `address(0)` and `projectId` to `0`. Permanently disables all `onlyOwner`-guarded functions. Irreversible. |
-| `setPermissionId(uint8)` | Owner or delegate | `jbOwner.permissionId` | Per-contract | Changes which permission ID grants owner-equivalent access via `JBPermissions`. Resets the delegation surface -- previous delegates with the old ID lose access. |
-| `transferOwnership(address)` | Owner or delegate | `jbOwner.permissionId` | Per-contract | Transfers ownership to a new address. Resets `projectId` to `0` and `permissionId` to `0`. The new owner must call `setPermissionId()` to re-enable delegation. |
-| `transferOwnershipToProject(uint256)` | Owner or delegate | `jbOwner.permissionId` | Per-contract | Transfers ownership to a Juicebox project. Resets `owner` to `address(0)` and `permissionId` to `0`. Validates that the project exists (`projectId <= PROJECTS.count()`). |
+## Immutable And One-Way
 
-### JBOwnable (concrete contract)
+- Project ownership changes dynamically with project NFT transfers.
+- Delegated permission ID resets on ownership transfer.
+- Renouncing ownership is final unless the inheriting contract adds a separate recovery path.
 
-`JBOwnable` inherits all functions above and adds no additional privileged functions. It provides the `onlyOwner` modifier for use by inheriting contracts.
+## Operational Notes
 
-Any contract that inherits `JBOwnable` and applies the `onlyOwner` modifier to its own functions effectively creates additional privileged functions gated by the same ownership and permission model described here.
+- Treat project-based ownership as live routing, not a snapshot.
+- Do not assume an operator permission survives ownership transfer.
+- Treat `setPermissionId(...)` as a real authority change because it rewires which delegated permission bit counts as owner access.
+- Review the inheriting contract, not just this primitive, to understand the full admin surface.
 
-## Ownership Model
+## Machine Notes
 
-JBOwnable bridges Juicebox project ownership to the OpenZeppelin `Ownable` pattern through the `JBOwner` struct:
+- Do not conclude authority from this repo alone; follow the inheriting contract's `onlyOwner` surfaces.
+- Treat ownership transfer as potentially changing both the owner identity and the usable delegated permission ID.
+- If the current permission ID is undocumented, inspect `jbOwner.permissionId` before reasoning about delegated owner access.
+- If a downstream repo uses project-based ownership, re-evaluate owner resolution after every project NFT transfer.
 
-```
-JBOwner {
-    address owner;        // Direct owner address (when projectId == 0)
-    uint88  projectId;    // JB project whose NFT holder is owner (when != 0)
-    uint8   permissionId; // Permission ID for delegation via JBPermissions
-}
-```
+## Recovery
 
-**Resolution logic** (in `_checkOwner()` and `owner()`):
-
-1. If `projectId != 0`, the owner is `PROJECTS.ownerOf(projectId)` -- resolved dynamically on every call. If `ownerOf()` reverts (e.g., hypothetical NFT burn), the resolved owner becomes `address(0)`, effectively renouncing the contract.
-2. If `projectId == 0`, the owner is `JBOwner.owner` directly.
-3. In both cases, `_checkOwner()` calls `_requirePermissionFrom(resolvedOwner, projectId, permissionId)`, which passes if `msg.sender` is the resolved owner OR has the configured `permissionId` granted through `JBPermissions`.
-
-**Permission delegation** uses the nana-core `JBPermissions` contract. The owner calls `JBPermissions.setPermissionsFor(...)` to grant `permissionId` to an operator address. That operator can then call any `onlyOwner` function on this contract. The ROOT permission (ID 1) in `JBPermissions` grants all permission IDs, including whatever `permissionId` is configured here.
-
-**Ownership transfer resets `permissionId` to 0.** This prevents the previous owner's delegates from retaining access after a transfer. The new owner must explicitly call `setPermissionId()` to configure delegation.
-
-## Usage Pattern
-
-Contracts inherit from `JBOwnable` to bridge Juicebox project ownership into the standard `onlyOwner` modifier pattern. The typical usage:
-
-```solidity
-contract MyHook is JBOwnable {
-    function adjustTiers(...) external onlyOwner {
-        // Only the resolved owner (or a permission delegate) can call this
-    }
-}
-```
-
-The `onlyOwner` modifier calls `_checkOwner()`, which resolves the current owner (via project NFT or direct address) and checks `_requirePermissionFrom()`. This means every `onlyOwner` function automatically supports:
-- Direct ownership (EOA or contract)
-- Project-based ownership (holder of the project NFT)
-- Permission delegation (via the configured `permissionId` through `JBPermissions`)
-
-**Practical example:** `JB721TiersHook` inherits `JBOwnable`. During deployment, ownership is transferred to the project via `transferOwnershipToProject(projectId)`. The project NFT holder then becomes the hook's owner, and they can delegate specific hook permissions to operators via `JBPermissions`.
-
-## Immutable Configuration
-
-| Property | Set At | Can Change? |
-|----------|--------|-------------|
-| `PERMISSIONS` (IJBPermissions) | Construction (via `JBPermissioned`) | No -- immutable |
-| `PROJECTS` (IJBProjects) | Construction | No -- immutable |
-
-The `JBPermissions` and `JBProjects` contract references are baked in at deploy time and cannot be changed. If either contract is upgraded or replaced, the `JBOwnable` instance must be redeployed.
+- This primitive has no protocol-wide recovery surface.
+- If ownership was transferred to the wrong project or address, recovery depends on the inheriting contract still recognizing the current owner.
 
 ## Admin Boundaries
 
-What admins **cannot** do:
+- This repo does not create a new permission namespace.
+- It cannot make an inheriting contract safer than that contract's own privileged functions.
+- It cannot preserve delegated operators across ownership transfer by default.
 
-- **Change the `PERMISSIONS` or `PROJECTS` contracts.** These are immutable references set at construction.
-- **Set both `owner` and `projectId` simultaneously.** The `_transferOwnership` internal function reverts if both are non-zero.
-- **Transfer to `address(0)` via `transferOwnership()`.** This reverts with `JBOwnableOverrides_InvalidNewOwner`. Use `renounceOwnership()` instead.
-- **Transfer to a non-existent project.** `transferOwnershipToProject()` checks `projectId <= PROJECTS.count()` and reverts if the project does not exist.
-- **Transfer to `projectId` 0 via `transferOwnershipToProject()`.** Reverts with `JBOwnableOverrides_InvalidNewOwner`.
-- **Transfer to `projectId` exceeding `uint88`.** Reverts with `JBOwnableOverrides_InvalidNewOwner`.
-- **Undo `renounceOwnership()`.** Once ownership is renounced, all `onlyOwner` functions are permanently disabled. There is no recovery mechanism.
-- **Bypass `JBPermissions` for delegation.** Permission delegation is exclusively handled through the external `JBPermissions` contract; `JBOwnable` itself has no operator registry.
-- **Prevent project NFT transfers from changing ownership.** When owned by a project, whoever holds the `JBProjects` ERC-721 is the owner. There is no veto or lock mechanism within `JBOwnable`.
-- **Project ownership resolution can fail.** When owned by a project (`projectId != 0`), `owner()` calls `PROJECTS.ownerOf(projectId)`. If this call reverts (e.g., the project NFT is held by a contract that rejects ERC-721 queries), the resolved owner becomes `address(0)`, effectively and permanently renouncing the contract. This is an edge case but has no recovery path.
+## Source Map
+
+- `src/JBOwnable.sol`
+- `src/JBOwnableOverrides.sol`
+- `src/structs/JBOwner.sol`
+- `test/OwnableInvariantTests.sol`
+- `test/OwnableEdgeCases.t.sol`
+- `test/regression/BurnLockProtection.t.sol`

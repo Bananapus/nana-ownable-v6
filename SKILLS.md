@@ -3,7 +3,7 @@
 ## Use This File For
 
 - Use this file when the task involves project-based ownership, delegated `onlyOwner` permissions, or how ownership should follow a Juicebox project NFT instead of a fixed wallet.
-- Start here, then open the concrete ownable contract, overrides, or tests depending on whether the question is about resolution, transfer, or delegated access.
+- Start here, then decide whether the question is about owner resolution, permission delegation, or ownership transfer semantics. Those surfaces are intentionally compact but security-sensitive.
 
 ## Read This Next
 
@@ -12,7 +12,8 @@
 | Repo overview and ownership model | [`README.md`](./README.md), [`ARCHITECTURE.md`](./ARCHITECTURE.md) |
 | Concrete contract | [`src/JBOwnable.sol`](./src/JBOwnable.sol) |
 | Resolution and permission logic | [`src/JBOwnableOverrides.sol`](./src/JBOwnableOverrides.sol), [`src/interfaces/`](./src/interfaces/), [`src/structs/`](./src/structs/) |
-| Edge, attack, or invariant coverage | [`test/Ownable.t.sol`](./test/Ownable.t.sol), [`test/OwnableEdgeCases.t.sol`](./test/OwnableEdgeCases.t.sol), [`test/OwnableAttacks.t.sol`](./test/OwnableAttacks.t.sol), [`test/regression/`](./test/regression/) |
+| Runtime and migration assumptions | [`references/runtime.md`](./references/runtime.md), [`references/operations.md`](./references/operations.md) |
+| Edge, attack, and invariant coverage | [`test/Ownable.t.sol`](./test/Ownable.t.sol), [`test/OwnableEdgeCases.t.sol`](./test/OwnableEdgeCases.t.sol), [`test/OwnableAttacks.t.sol`](./test/OwnableAttacks.t.sol), [`test/OwnableInvariantTests.sol`](./test/OwnableInvariantTests.sol), [`test/CodexUnmintedProjectHijack.t.sol`](./test/CodexUnmintedProjectHijack.t.sol) |
 
 ## Repo Map
 
@@ -35,4 +36,6 @@ Ownership adapter for contracts that should follow Juicebox project ownership in
 
 - Start in [`src/JBOwnableOverrides.sol`](./src/JBOwnableOverrides.sol) when the question is about who the effective owner is or why `onlyOwner` passed or failed.
 - Treat ownership transfer and delegated permission resets as security-sensitive.
+- Project-based ownership can intentionally become unusable if it points at an unminted or invalid project. Treat that as a deployment invariant, not a runtime surprise.
+- Unminted or unexpectedly transferred project NFTs can change the effective owner surface. Check the project lifecycle, not just this adapter.
 - When a bug looks like project ownership itself, confirm whether the real source is upstream in `nana-core-v6` rather than this adapter layer.

@@ -16,3 +16,4 @@
 - [`test/Ownable.t.sol`](../test/Ownable.t.sol) for baseline behavior.
 - [`test/OwnableEdgeCases.t.sol`](../test/OwnableEdgeCases.t.sol) and [`test/OwnableAttacks.t.sol`](../test/OwnableAttacks.t.sol) for edge and adversarial cases.
 - [`test/OwnableInvariantTests.sol`](../test/OwnableInvariantTests.sol) for broader invariants.
+- [`test/regression/BurnLockProtection.t.sol`](../test/regression/BurnLockProtection.t.sol), [`test/regression/ZeroAddressValidation.t.sol`](../test/regression/ZeroAddressValidation.t.sol), and [`test/CodexUnmintedProjectHijack.t.sol`](../test/CodexUnmintedProjectHijack.t.sol) for the regressions most likely to matter in review.
