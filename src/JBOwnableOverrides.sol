@@ -134,6 +134,17 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             }
         }
 
+        // When permissionId is 0 (direct-owner-only mode), bypass the permission system entirely.
+        // This ensures ROOT operators cannot act as owner when delegation is disabled.
+        if (ownerInfo.permissionId == 0) {
+            if (_msgSender() != resolvedOwner) {
+                revert JBPermissioned.JBPermissioned_Unauthorized({
+                    account: resolvedOwner, sender: _msgSender(), projectId: ownerInfo.projectId, permissionId: 0
+                });
+            }
+            return;
+        }
+
         _requirePermissionFrom({
             account: resolvedOwner, projectId: ownerInfo.projectId, permissionId: ownerInfo.permissionId
         });
