@@ -9,7 +9,7 @@ import {JBPermissions} from "@bananapus/core-v6/src/JBPermissions.sol";
 import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
 import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsData.sol";
 
-contract CodexNemesisPermissionDriftAfterProjectTransferTest is Test {
+contract PermissionDriftAfterProjectTransferTest is Test {
     JBPermissions internal permissions;
     JBProjects internal projects;
 

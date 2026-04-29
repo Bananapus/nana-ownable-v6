@@ -11,7 +11,7 @@ import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.s
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsData.sol";
 
-contract CodexNemesisPermissionIdNFTTransferTest is Test {
+contract PermissionIdNFTTransferTest is Test {
     IJBProjects internal projects;
     IJBPermissions internal permissions;
 
