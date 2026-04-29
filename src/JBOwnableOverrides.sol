@@ -37,6 +37,14 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     JBOwner public override jbOwner;
 
     //*********************************************************************//
+    // -------------------- internal stored properties ------------------- //
+    //*********************************************************************//
+
+    /// @notice The resolved owner address at the time permissionId was last set.
+    /// @dev Used to detect stale permissions after ownership changes (e.g., NFT transfer).
+    address internal _permissionOwner;
+
+    //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
@@ -134,9 +142,16 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             }
         }
 
+        // Detect stale permissions: if ownership changed since permissionId was set
+        // (e.g., project NFT transferred), treat permissionId as 0 (direct-owner-only).
+        uint8 effectivePermissionId = ownerInfo.permissionId;
+        if (effectivePermissionId != 0 && resolvedOwner != _permissionOwner) {
+            effectivePermissionId = 0;
+        }
+
         // When permissionId is 0 (direct-owner-only mode), bypass the permission system entirely.
         // This ensures ROOT operators cannot act as owner when delegation is disabled.
-        if (ownerInfo.permissionId == 0) {
+        if (effectivePermissionId == 0) {
             if (_msgSender() != resolvedOwner) {
                 revert JBPermissioned.JBPermissioned_Unauthorized({
                     account: resolvedOwner, sender: _msgSender(), projectId: ownerInfo.projectId, permissionId: 0
@@ -146,7 +161,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         }
 
         _requirePermissionFrom({
-            account: resolvedOwner, projectId: ownerInfo.projectId, permissionId: ownerInfo.permissionId
+            account: resolvedOwner, projectId: ownerInfo.projectId, permissionId: effectivePermissionId
         });
     }
 
@@ -221,6 +236,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// @param permissionId The permission ID to use for `onlyOwner`.
     function _setPermissionId(uint8 permissionId) internal virtual {
         jbOwner.permissionId = permissionId;
+        _permissionOwner = owner();
         emit PermissionIdChanged({newId: permissionId, caller: _msgSender()});
     }
 
@@ -257,6 +273,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         // Update the stored owner information to the new owner and reset the `permissionId`.
         // This is to prevent permissions clashes for the new user/owner.
         jbOwner = JBOwner({owner: newOwner, projectId: projectId, permissionId: 0});
+        _permissionOwner = address(0);
         // Emit a transfer event with the new owner's address.
         _emitTransferEvent({previousOwner: oldOwner, newOwner: newOwner, newProjectId: projectId});
     }
