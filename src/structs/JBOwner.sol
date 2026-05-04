@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/// @notice Owner information for a given instance of `JBOwnableOverrides`.
-/// @custom:member owner If `projectId` is 0, this address has owner access.
-/// @custom:member projectId The owner of the `JBProjects` ERC-721 with this ID has owner access. If this is 0, the
-/// `owner` address has owner access.
-/// @custom:member permissionId The permission ID which corresponds to owner access. See `JBPermissions` in `nana-core`
-/// and `nana-permission-ids`.
+/// @notice Describes who owns a `JBOwnable` contract and how they can delegate access.
+/// @custom:member owner The owner address — only used when `projectId` is 0 (address-based ownership mode).
+/// @custom:member projectId If non-zero, the holder of this Juicebox project's ERC-721 NFT is the owner. When set,
+/// the `owner` field is ignored and ownership resolves dynamically via `JBProjects.ownerOf(projectId)`.
+/// @custom:member permissionId The permission ID that delegates can hold (via `JBPermissions`) to act as owner. Set
+/// to 0 to disable delegation entirely — only the direct owner can call `onlyOwner` functions.
 struct JBOwner {
     address owner;
     uint88 projectId;

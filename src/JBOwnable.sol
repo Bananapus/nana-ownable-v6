@@ -7,16 +7,11 @@ import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.s
 
 import {JBOwnableOverrides} from "./JBOwnableOverrides.sol";
 
-/// @notice A function restricted by `JBOwnable` can only be called by a Juicebox project's owner, a specified owner
-/// address (if set), or addresses with permission from the owner.
-/// @dev A function with the `onlyOwner` modifier from `JBOwnable` can only be called by addresses with owner access
-/// based on a `JBOwner` struct:
-/// 1. If `JBOwner.projectId` isn't zero, the address holding the `JBProjects` NFT with the `JBOwner.projectId` ID is
-/// the owner.
-/// 2. If `JBOwner.projectId` is set to `0`, the `JBOwner.owner` address is the owner.
-/// 3. The owner can give other addresses access with `JBPermissions.setPermissionsFor(...)`, using the
-/// `JBOwner.permissionId` permission.
-/// @dev To use `onlyOwner`, inherit this contract and apply the modifier to a function.
+/// @notice Juicebox-aware ownership for any contract. Inherit this and apply the `onlyOwner` modifier to restrict
+/// functions to the project owner, a fixed address, or anyone the owner has granted permission to via `JBPermissions`.
+/// @dev Ownership resolves dynamically: if `JBOwner.projectId` is set, the holder of that project's ERC-721 NFT is
+/// the owner. If `projectId` is 0, the stored `JBOwner.owner` address is used instead. The owner can delegate access
+/// to other addresses by setting a `permissionId` and granting that permission through `JBPermissions`.
 contract JBOwnable is JBOwnableOverrides {
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
