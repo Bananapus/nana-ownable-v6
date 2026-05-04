@@ -101,12 +101,11 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
-    /// @notice Returns the owner's address based on this contract's `JBOwner`.
-    /// @dev If `projectId` is non-zero, resolves via `PROJECTS.ownerOf()`. If that call reverts (e.g., because the
-    /// project NFT was burned or invalidated), returns `address(0)` — effectively treating the contract as renounced.
-    /// @dev **Assumption:** `JBProjects` V6 has no burn function, so this scenario cannot occur under normal
-    /// conditions. The try-catch is a defensive measure against hypothetical future changes to `JBProjects` or
-    /// unexpected ERC-721 behavior.
+    /// @notice Returns the current owner's address. If ownership is project-based, this dynamically resolves to
+    /// whoever holds the project's ERC-721 NFT right now.
+    /// @dev If `projectId` is non-zero, resolves via `PROJECTS.ownerOf()`. If that call reverts (e.g., burned NFT),
+    /// returns `address(0)` — effectively treating the contract as renounced. `JBProjects` V6 has no burn function,
+    /// so this is a defensive measure only.
     function owner() public view virtual returns (address) {
         JBOwner memory ownerInfo = jbOwner;
 
@@ -127,9 +126,11 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
-    /// @notice Reverts if the sender is not the owner.
+    /// @notice Reverts if the caller is not the owner (or an authorized delegate when `permissionId` is set).
     /// @dev If `projectId` is non-zero and `PROJECTS.ownerOf()` reverts (e.g., burned NFT), the resolved owner is
     /// `address(0)`, causing all `_checkOwner` calls to revert — equivalent to a renounced contract.
+    /// @dev Stale permission detection: if the resolved owner differs from `_permissionOwner` (set when
+    /// `setPermissionId` was last called), delegation is disabled until the new owner re-configures it.
     function _checkOwner() internal view virtual {
         JBOwner memory ownerInfo = jbOwner;
 
@@ -172,17 +173,18 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     // ---------------------- public transactions ------------------------ //
     //*********************************************************************//
 
-    /// @notice Gives up ownership of this contract, making it impossible to call `onlyOwner` and `_checkOwner`
-    /// functions.
-    /// @dev This can only be called by the current owner.
+    /// @notice Permanently gives up ownership. After this, no address can call `onlyOwner` functions.
+    /// @dev Can only be called by the current owner. This is irreversible.
     function renounceOwnership() public virtual override {
         _checkOwner();
         _transferOwnership({newOwner: address(0), projectId: 0});
     }
 
-    /// @notice Sets the permission ID the owner can use to give other addresses owner access.
-    /// @dev This can only be called by the current owner.
-    /// @param permissionId The permission ID to use for `onlyOwner`.
+    /// @notice Configures which `JBPermissions` permission ID grants delegate access to `onlyOwner` functions.
+    /// Set to 0 to disable delegation entirely (only the direct owner can call).
+    /// @dev Can only be called by the current owner. Records the current owner so stale permissions are detected
+    /// if ownership later changes.
+    /// @param permissionId The permission ID to use for `onlyOwner` delegation.
     function setPermissionId(uint8 permissionId) public virtual override {
         _checkOwner();
         _setPermissionId(permissionId);
@@ -202,10 +204,11 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         _transferOwnership({newOwner: newOwner, projectId: 0});
     }
 
-    /// @notice Transfer ownership of this contract to a new Juicebox project.
-    /// @dev The `permissionId` is reset to 0 on transfer to prevent permission clashes for the new project owner.
-    /// The new owner must explicitly call `setPermissionId()` to configure owner-level permission delegation.
-    /// @dev The `projectId` must fit within a `uint88`.
+    /// @notice Transfers ownership to a Juicebox project — whoever holds that project's ERC-721 NFT becomes the
+    /// owner.
+    /// @dev The `permissionId` is reset to 0 on transfer to prevent the previous owner's delegates from retaining
+    /// access. The new project owner must call `setPermissionId()` to re-enable delegation.
+    /// @dev The `projectId` must fit within a `uint88` and the project must already exist.
     /// @param projectId The ID of the project to transfer ownership to.
     function transferOwnershipToProject(uint256 projectId) public virtual override {
         _checkOwner();
@@ -243,7 +246,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         emit PermissionIdChanged({newId: permissionId, caller: _msgSender()});
     }
 
-    /// @notice Helper to allow for drop-in replacement of OpenZeppelin `Ownable`.
+    /// @notice Drop-in replacement for OpenZeppelin's `Ownable._transferOwnership(address)`.
     /// @param newOwner The address that should receive ownership of this contract.
     function _transferOwnership(address newOwner) internal virtual {
         _transferOwnership({newOwner: newOwner, projectId: 0});
