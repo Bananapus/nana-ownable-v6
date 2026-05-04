@@ -1,18 +1,27 @@
 {
   "name": "@bananapus/ownable-v6",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bananapus/nana-ownable-v6"
   },
+  "files": [
+    "CHANGELOG.md",
+    "foundry.lock",
+    "foundry.toml",
+    "references/",
+    "remappings.txt",
+    "src/",
+    "test/mocks/"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@bananapus/core-v6": "^0.0.36",
-    "@bananapus/permission-ids-v6": "^0.0.19",
-    "@openzeppelin/contracts": "^5.6.1"
+    "@bananapus/core-v6": "0.0.38",
+    "@bananapus/permission-ids-v6": "0.0.22",
+    "@openzeppelin/contracts": "5.6.1"
   },
   "scripts": {
     "test": "forge test",
