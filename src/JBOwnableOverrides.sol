@@ -10,9 +10,12 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IJBOwnable} from "./interfaces/IJBOwnable.sol";
 import {JBOwner} from "./structs/JBOwner.sol";
 
-/// @notice An abstract base for `JBOwnable`, which restricts functions so they can only be called by a Juicebox
-/// project's owner or a specific owner address. The owner can give access permission to other addresses with
-/// `JBPermissions`.
+/// @notice Abstract base implementing Juicebox-aware ownership resolution, transfer, and permission delegation.
+/// Ownership is either address-based (a fixed EOA/contract) or project-based (whoever holds the project's ERC-721
+/// NFT). The owner can delegate access to other addresses by configuring a `permissionId` in `JBPermissions`.
+/// @dev Stale permission detection: when ownership changes (e.g. project NFT transferred), the `permissionId` is
+/// effectively ignored until the new owner explicitly re-sets it — preventing the previous owner's delegates from
+/// retaining access.
 abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -26,14 +29,14 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
 
-    /// @notice Mints ERC-721s that represent project ownership and transfers.
+    /// @notice The `JBProjects` ERC-721 contract used to resolve project-based ownership.
     IJBProjects public immutable override PROJECTS;
 
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
-    /// @notice This contract's owner information.
+    /// @notice The current ownership state — who owns this contract and how permission delegation is configured.
     JBOwner public override jbOwner;
 
     //*********************************************************************//
