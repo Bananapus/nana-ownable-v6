@@ -43,7 +43,9 @@ contract OwnableAttacks is Test {
     function test_bothOwnerAndProjectId_constructorReverts() public {
         uint256 projectId = projects.createFor(alice);
 
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, bob, projectId)
+        );
         // forge-lint: disable-next-line(unsafe-typecast)
         new MockOwnable(projects, permissions, bob, uint88(projectId));
     }
