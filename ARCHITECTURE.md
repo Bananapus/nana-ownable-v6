@@ -70,7 +70,7 @@ No treasury accounting lives here. The important state is ownership resolution d
   `test/OwnableEdgeCases.t.sol`
   `test/OwnableAttacks.t.sol`
 - unminted-project and burn-lock safety:
-  `test/CodexUnmintedProjectHijack.t.sol`
+  `test/RegressionUnmintedProjectHijack.t.sol`
   `test/regression/BurnLockProtection.t.sol`
 - ownership-state invariants:
   `test/OwnableInvariantTests.sol`
@@ -84,7 +84,7 @@ No treasury accounting lives here. The important state is ownership resolution d
 - `test/Ownable.t.sol`
 - `test/OwnableEdgeCases.t.sol`
 - `test/OwnableAttacks.t.sol`
-- `test/CodexUnmintedProjectHijack.t.sol`
+- `test/RegressionUnmintedProjectHijack.t.sol`
 - `test/regression/BurnLockProtection.t.sol`
 - `test/regression/ZeroAddressValidation.t.sol`
 - `test/OwnableInvariantTests.sol`

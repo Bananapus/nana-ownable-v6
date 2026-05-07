@@ -390,7 +390,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 14: OwnershipTransferred event uses _msgSender() (L-27 fix)
+    // Test 14: OwnershipTransferred event uses _msgSender() (fix)
     // =========================================================================
     /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
     ///         the OwnershipTransferred event's caller field should reflect the
@@ -413,7 +413,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 15: PermissionIdChanged event uses _msgSender() (L-27 fix)
+    // Test 15: PermissionIdChanged event uses _msgSender() (fix)
     // =========================================================================
     /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
     ///         the PermissionIdChanged event's caller field should reflect the

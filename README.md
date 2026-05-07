@@ -7,7 +7,7 @@ User journeys: [USER_JOURNEYS.md](./USER_JOURNEYS.md)
 Skills: [SKILLS.md](./SKILLS.md)  
 Risks: [RISKS.md](./RISKS.md)  
 Administration: [ADMINISTRATION.md](./ADMINISTRATION.md)  
-Audit instructions: [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md)
+Review instructions: [REVIEW_GUIDE.md](./REVIEW_GUIDE.md)
 
 ## Overview
 
@@ -62,7 +62,7 @@ This package is a small ownership adapter:
 
 1. `test/Ownable.t.sol`
 2. `test/OwnableAttacks.t.sol`
-3. `test/CodexUnmintedProjectHijack.t.sol`
+3. `test/RegressionUnmintedProjectHijack.t.sol`
 4. `test/regression/BurnLockProtection.t.sol`
 
 ## Install

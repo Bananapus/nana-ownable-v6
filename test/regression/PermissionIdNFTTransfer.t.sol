@@ -26,6 +26,7 @@ contract PermissionIdNFTTransferTest is Test {
 
     function test_projectNftTransferInvalidatesStalePermissionId() external {
         uint256 projectId = projects.createFor(seller);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Seller sets permissionId 30 while they own the project.
@@ -38,6 +39,7 @@ contract PermissionIdNFTTransferTest is Test {
         vm.prank(buyer);
         permissions.setPermissionsFor(
             buyer,
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: buyerOperator, projectId: uint56(projectId), permissionIds: permissionIds})
         );
 
@@ -62,6 +64,7 @@ contract PermissionIdNFTTransferTest is Test {
 
     function test_newOwnerCanSetOwnPermissionIdAndDelegateAccess() external {
         uint256 projectId = projects.createFor(seller);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Seller sets permissionId 30 while they own the project.
@@ -78,6 +81,7 @@ contract PermissionIdNFTTransferTest is Test {
         vm.prank(buyer);
         permissions.setPermissionsFor(
             buyer,
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: buyerOperator, projectId: uint56(projectId), permissionIds: permissionIds})
         );
 

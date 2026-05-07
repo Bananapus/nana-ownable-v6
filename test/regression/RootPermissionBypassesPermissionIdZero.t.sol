@@ -22,9 +22,10 @@ contract RootPermissionBypassesPermissionIdZeroTest is Test {
         projects = new JBProjects(address(this), address(0), address(0));
     }
 
-    /// @notice After M-39 fix: ROOT operator is rejected when permissionId=0 (direct-owner-only mode).
+    /// @notice After fix: ROOT operator is rejected when permissionId=0 (direct-owner-only mode).
     function test_rootPermissionRejectedWhenPermissionIdIsZero() public {
         uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Grant ROOT permission (id=1) to operator.
@@ -33,7 +34,10 @@ contract RootPermissionBypassesPermissionIdZeroTest is Test {
 
         vm.prank(alice);
         permissions.setPermissionsFor(
-            alice, JBPermissionsData({operator: operator, projectId: uint56(projectId), permissionIds: permissionIds})
+            // forge-lint: disable-next-line(unsafe-typecast)
+            alice,
+            // forge-lint: disable-next-line(unsafe-typecast)
+            JBPermissionsData({operator: operator, projectId: uint56(projectId), permissionIds: permissionIds})
         );
 
         (, uint88 storedProjectId, uint8 permissionId) = ownable.jbOwner();
@@ -51,6 +55,7 @@ contract RootPermissionBypassesPermissionIdZeroTest is Test {
     /// @notice Direct owner still works when permissionId=0.
     function test_directOwnerStillWorksWithPermissionIdZero() public {
         uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         (, uint88 storedProjectId, uint8 permissionId) = ownable.jbOwner();
@@ -65,6 +70,7 @@ contract RootPermissionBypassesPermissionIdZeroTest is Test {
     /// @notice Non-zero permissionId still delegates correctly via the permission system.
     function test_delegatedOperatorWorksWhenPermissionIdNonZero() public {
         uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         // Set permissionId to 42 (non-zero = delegation enabled).
@@ -77,7 +83,10 @@ contract RootPermissionBypassesPermissionIdZeroTest is Test {
 
         vm.prank(alice);
         permissions.setPermissionsFor(
-            alice, JBPermissionsData({operator: operator, projectId: uint56(projectId), permissionIds: permissionIds})
+            // forge-lint: disable-next-line(unsafe-typecast)
+            alice,
+            // forge-lint: disable-next-line(unsafe-typecast)
+            JBPermissionsData({operator: operator, projectId: uint56(projectId), permissionIds: permissionIds})
         );
 
         // Operator should succeed with matching permissionId.

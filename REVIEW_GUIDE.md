@@ -1,8 +1,8 @@
-# Audit Instructions
+# Review Guide
 
 This repo provides ownership helpers that can follow Juicebox project NFTs instead of a fixed EOA. It is a small repo with outsized privilege impact.
 
-## Audit Objective
+## Review Objective
 
 Find issues that:
 

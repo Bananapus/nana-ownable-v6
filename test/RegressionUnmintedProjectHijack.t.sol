@@ -10,7 +10,7 @@ import {JBProjects} from "@bananapus/core-v6/src/JBProjects.sol";
 import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.sol";
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
-contract CodexUnmintedProjectHijackTest is Test {
+contract RegressionUnmintedProjectHijackTest is Test {
     IJBProjects internal projects;
     IJBPermissions internal permissions;
 
