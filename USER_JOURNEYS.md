@@ -8,7 +8,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 
 - protocol or product teams that want `onlyOwner` to follow a project NFT
 - operators who need owner-like access without receiving the project itself
-- reviewers checking whether delegated owner semantics strand or over-grant authority
+- auditors checking whether delegated owner semantics strand or over-grant authority
 
 ## Key Surfaces
 
@@ -34,7 +34,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 **Failure Modes**
 - the contract assumes ordinary `Ownable` transfer semantics after adopting project-based ownership
 - the wrong project ID is configured
-- reviewers ignore the adapter and review the downstream contract as if `owner` were fixed
+- reviewers ignore the adapter and audit the downstream contract as if `owner` were fixed
 
 **Postconditions**
 - `owner()` now resolves through the configured project NFT instead of a fixed wallet
@@ -75,7 +75,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 **Main Flow**
 1. Update the permission ID the adapter treats as owner-equivalent with `setPermissionId(...)`.
 2. Re-grant the new permission where needed.
-3. Review operator assumptions because the old permission no longer satisfies `onlyOwner`.
+3. Re-audit operator assumptions because the old permission no longer satisfies `onlyOwner`.
 
 **Failure Modes**
 - operator access disappears unintentionally after a permission-ID rotation
@@ -109,7 +109,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 ## Trust Boundaries
 
 - this repo trusts `JBProjects` for project ownership and `JBPermissions` for delegated authority
-- downstream contracts still need their own review because this adapter changes who satisfies `onlyOwner`
+- downstream contracts still need their own audit because this adapter changes who satisfies `onlyOwner`
 
 ## Hand-Offs
 
