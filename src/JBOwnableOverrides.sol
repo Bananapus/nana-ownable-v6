@@ -21,9 +21,19 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBOwnableOverrides_InvalidNewOwner();
-    error JBOwnableOverrides_ProjectDoesNotExist();
-    error JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner();
+    /// @notice Thrown when an ownership transfer or constructor input does not identify exactly one valid owner.
+    /// @param newOwner The address owner being set.
+    /// @param projectId The project owner ID being set.
+    error JBOwnableOverrides_InvalidNewOwner(address newOwner, uint256 projectId);
+
+    /// @notice Thrown when project-based ownership points to a project that has not been minted.
+    /// @param projectId The project ID that was requested.
+    /// @param projectCount The current number of minted projects.
+    error JBOwnableOverrides_ProjectDoesNotExist(uint256 projectId, uint256 projectCount);
+
+    /// @notice Thrown when project-based ownership is requested without a `JBProjects` contract.
+    /// @param projectId The project owner ID that requires a non-zero `JBProjects` contract.
+    error JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner(uint256 projectId);
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -79,7 +89,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         // Deploying with projects=address(0) and a non-zero projectId would permanently disable
         // ownership resolution, as all ownerOf() calls would revert on the zero address.
         if (initialProjectIdOwner != 0 && address(projects) == address(0)) {
-            revert JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner();
+            revert JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner(initialProjectIdOwner);
         }
 
         // We force the inheriting contract to set an owner, as there is a low chance someone will use `JBOwnable` to
@@ -87,7 +97,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         // It's more likely both were accidentally set to `0`. If you really want an unowned contract, set the owner to
         // an address and call `renounceOwnership()` in the constructor body.
         if (initialProjectIdOwner == 0 && initialOwner == address(0)) {
-            revert JBOwnableOverrides_InvalidNewOwner();
+            revert JBOwnableOverrides_InvalidNewOwner({newOwner: initialOwner, projectId: initialProjectIdOwner});
         }
 
         // No explicit project existence check here — if `initialProjectIdOwner` refers to an unminted project,
@@ -198,7 +208,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     function transferOwnership(address newOwner) public virtual override {
         _checkOwner();
         if (newOwner == address(0)) {
-            revert JBOwnableOverrides_InvalidNewOwner();
+            revert JBOwnableOverrides_InvalidNewOwner({newOwner: newOwner, projectId: 0});
         }
 
         _transferOwnership({newOwner: newOwner, projectId: 0});
@@ -213,12 +223,12 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     function transferOwnershipToProject(uint256 projectId) public virtual override {
         _checkOwner();
         if (projectId == 0 || projectId > type(uint88).max) {
-            revert JBOwnableOverrides_InvalidNewOwner();
+            revert JBOwnableOverrides_InvalidNewOwner({newOwner: address(0), projectId: projectId});
         }
 
         // Make sure the project exists to prevent permanent loss of contract control.
         if (projectId > PROJECTS.count()) {
-            revert JBOwnableOverrides_ProjectDoesNotExist();
+            revert JBOwnableOverrides_ProjectDoesNotExist({projectId: projectId, projectCount: PROJECTS.count()});
         }
 
         // forge-lint: disable-next-line(unsafe-typecast)
@@ -261,7 +271,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     function _transferOwnership(address newOwner, uint88 projectId) internal virtual {
         // Can't set both a new owner and a new project ID.
         if (projectId != 0 && newOwner != address(0)) {
-            revert JBOwnableOverrides_InvalidNewOwner();
+            revert JBOwnableOverrides_InvalidNewOwner({newOwner: newOwner, projectId: projectId});
         }
         // Load the owner information from storage.
         JBOwner memory ownerInfo = jbOwner;

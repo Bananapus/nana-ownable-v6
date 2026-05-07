@@ -13,7 +13,7 @@
 | Concrete contract | [`src/JBOwnable.sol`](./src/JBOwnable.sol) |
 | Resolution and permission logic | [`src/JBOwnableOverrides.sol`](./src/JBOwnableOverrides.sol), [`src/interfaces/`](./src/interfaces/), [`src/structs/`](./src/structs/) |
 | Runtime and migration assumptions | [`references/runtime.md`](./references/runtime.md), [`references/operations.md`](./references/operations.md) |
-| Edge, attack, and invariant coverage | [`test/Ownable.t.sol`](./test/Ownable.t.sol), [`test/OwnableEdgeCases.t.sol`](./test/OwnableEdgeCases.t.sol), [`test/OwnableAttacks.t.sol`](./test/OwnableAttacks.t.sol), [`test/OwnableInvariantTests.sol`](./test/OwnableInvariantTests.sol), [`test/CodexUnmintedProjectHijack.t.sol`](./test/CodexUnmintedProjectHijack.t.sol) |
+| Edge, attack, and invariant coverage | [`test/Ownable.t.sol`](./test/Ownable.t.sol), [`test/OwnableEdgeCases.t.sol`](./test/OwnableEdgeCases.t.sol), [`test/OwnableAttacks.t.sol`](./test/OwnableAttacks.t.sol), [`test/OwnableInvariantTests.sol`](./test/OwnableInvariantTests.sol), [`test/RegressionUnmintedProjectHijack.t.sol`](./test/RegressionUnmintedProjectHijack.t.sol) |
 
 ## Repo Map
 

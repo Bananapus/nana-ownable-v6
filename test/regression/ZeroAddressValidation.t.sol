@@ -28,7 +28,9 @@ contract ZeroAddressValidation is Test {
     /// @notice Deploying with projects=address(0) and non-zero projectId must revert.
     function test_zeroProjectsWithProjectId_reverts() public {
         vm.expectRevert(
-            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner.selector)
+            abi.encodeWithSelector(
+                JBOwnableOverrides.JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner.selector, 1
+            )
         );
         new MockOwnable(IJBProjects(address(0)), permissions, address(0), uint88(1));
     }
@@ -38,7 +40,9 @@ contract ZeroAddressValidation is Test {
         vm.assume(projectId != 0);
 
         vm.expectRevert(
-            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner.selector)
+            abi.encodeWithSelector(
+                JBOwnableOverrides.JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner.selector, projectId
+            )
         );
         new MockOwnable(IJBProjects(address(0)), permissions, address(0), projectId);
     }
@@ -61,7 +65,9 @@ contract ZeroAddressValidation is Test {
 
     /// @notice The existing check for both zero owner and zero projectId is still enforced.
     function test_bothZero_stillReverts() public {
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, address(0), 0)
+        );
         new MockOwnable(projects, permissions, address(0), uint88(0));
     }
 }
