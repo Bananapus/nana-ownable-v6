@@ -212,12 +212,16 @@ contract OwnableEdgeCases is Test {
 
         // Project 2 doesn't exist.
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ProjectDoesNotExist.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ProjectDoesNotExist.selector, 2, 1)
+        );
         ownable.transferOwnershipToProject(2);
 
         // Project 999 doesn't exist.
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ProjectDoesNotExist.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_ProjectDoesNotExist.selector, 999, 1)
+        );
         ownable.transferOwnershipToProject(999);
     }
 
