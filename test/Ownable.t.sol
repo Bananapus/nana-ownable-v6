@@ -112,7 +112,9 @@ contract OwnableTest is Test {
         // Create the `Ownable` contract.
         MockOwnable ownable = new MockOwnable(projects, permissions, owner, 0);
 
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, address(0), 0)
+        );
 
         // Transfer ownership to project ID 0 (should revert).
         ownable.transferOwnershipToProject(0);
@@ -126,7 +128,9 @@ contract OwnableTest is Test {
         // Create the `Ownable` contract.
         MockOwnable ownable = new MockOwnable(projects, permissions, owner, uint88(0));
 
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, address(0), 0)
+        );
 
         // Transfer ownership to the 0 address (should revert).
         ownable.transferOwnership(address(0));
@@ -367,7 +371,9 @@ contract OwnableTest is Test {
         uint256 _projectId = projects.createFor(projectOwner);
 
         // Should revert because we set both a owner and a projectOwner
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, owner, _projectId)
+        );
 
         // Create the `Ownable` contract.
         // forge-lint: disable-next-line(unsafe-typecast)
@@ -376,7 +382,9 @@ contract OwnableTest is Test {
 
     function testCantInitializeAsRenounced() public {
         // Should revert because we set both a owner and a projectOwner
-        vm.expectRevert(abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, address(0), 0)
+        );
         // Create the `Ownable` contract.
         new MockOwnable(projects, permissions, address(0), uint88(0));
     }
