@@ -89,7 +89,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         // Deploying with projects=address(0) and a non-zero projectId would permanently disable
         // ownership resolution, as all ownerOf() calls would revert on the zero address.
         if (initialProjectIdOwner != 0 && address(projects) == address(0)) {
-            revert JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner(initialProjectIdOwner);
+            revert JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner({projectId: initialProjectIdOwner});
         }
 
         // We force the inheriting contract to set an owner, as there is a low chance someone will use `JBOwnable` to
