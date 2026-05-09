@@ -34,12 +34,13 @@ This file covers the ownership-model risks in `JBOwnable`: dynamic ownership thr
 
 ## 3. Accepted Behaviors
 
-- **Permission ID resets on transfer.** `permissionId` resets to `0` on ownership transfer so old delegated operators do not automatically retain power.
+- **Permission ID resets on transfer (one-way).** `permissionId` resets to `0` on ownership transfer so old delegated operators do not automatically retain power. This protection applies to one-way transfers only — see the round-trip reactivation entry below.
 - **`permissionId = 0` means direct-owner-only mode.** This is a valid configuration, not an error state.
 - **Invalid project ownership resolves fail-closed.** If `ownerOf` cannot resolve, the contract is effectively renounced until ownership becomes readable again.
 - **`transferOwnershipToProject` rejects non-existent projects.** The function checks existence at transfer time.
 - **Constructor pre-binding to a future project ID is supported.** This is useful in controlled deployment flows, but dangerous if the deployer does not control mint sequencing.
 - **Transfer events can temporarily show `address(0)`.** When ownership points to an unminted future project, the transfer event shows `address(0)` until ownership can resolve dynamically.
+- **NFT round-trip reactivates stale delegate permissions.** When a project NFT round-trips back to the original owner, `_checkOwner`'s comparison `resolvedOwner == _permissionOwner` becomes true again, reactivating whatever `permissionId` (and associated `JBPermissions` operator grants) was configured before the transfer. This is accepted by design: the owner is responsible for revoking stale permissions after reclaiming the NFT. The permission system intentionally defers to `JBPermissions` for operator management rather than tracking ownership epochs.
 
 ## 4. Invariants To Verify
 
