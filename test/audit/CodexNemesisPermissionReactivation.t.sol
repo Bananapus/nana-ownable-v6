@@ -36,8 +36,9 @@ contract CodexNemesisPermissionReactivationTest is Test {
         permissionIds[0] = 30;
         vm.prank(seller);
         permissions.setPermissionsFor(
-            // forge-lint: disable-next-line(unsafe-typecast)
             seller,
+            // Safe: `projectId` comes from the mock projects counter in this test and is far below uint64 max.
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBPermissionsData({operator: sellerOperator, projectId: uint64(projectId), permissionIds: permissionIds})
         );
 
