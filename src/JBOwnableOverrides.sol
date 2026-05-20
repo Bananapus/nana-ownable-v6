@@ -225,6 +225,9 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         if (projectId == 0 || projectId > type(uint88).max) {
             revert JBOwnableOverrides_InvalidNewOwner({newOwner: address(0), projectId: projectId});
         }
+        if (address(PROJECTS) == address(0)) {
+            revert JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner({projectId: projectId});
+        }
 
         // Make sure the project exists to prevent permanent loss of contract control.
         if (projectId > PROJECTS.count()) {

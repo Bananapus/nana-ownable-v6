@@ -55,6 +55,19 @@ contract ZeroAddressValidation is Test {
         assertEq(ownable.owner(), alice, "Owner should be alice with address-based ownership");
     }
 
+    /// @notice Address-owned contracts deployed without PROJECTS cannot later transfer to project ownership.
+    function test_transferOwnershipToProjectWithZeroProjects_revertsWithExplicitError() public {
+        MockOwnable ownable = new MockOwnable(IJBProjects(address(0)), permissions, alice, uint88(0));
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBOwnableOverrides.JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner.selector, 1
+            )
+        );
+        ownable.transferOwnershipToProject(1);
+    }
+
     /// @notice Normal deployment with valid projects contract and projectId succeeds.
     function test_validProjectsWithProjectId_succeeds() public {
         uint256 projectId = projects.createFor(alice);
