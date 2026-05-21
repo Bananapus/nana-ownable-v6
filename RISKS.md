@@ -21,7 +21,7 @@ This file covers the ownership-model risks in `JBOwnable`: dynamic ownership thr
 - **`JBPermissions` works correctly.** A bug there affects every `JBOwnable` contract that relies on delegated owner access.
 - **`JBProjects` ownership is the source of truth.** When a contract is project-owned, whoever holds the project NFT has owner access.
 - **Delegated permission means owner-equivalent access.** Anyone granted the configured `permissionId` through `JBPermissions` can satisfy owner checks for the scoped contract.
-- **Deployment inputs are intentional.** If `initialProjectIdOwner != 0`, deployers must understand whether that project already exists.
+- **Deployment inputs are intentional.** Constructor dependencies such as `JBProjects` and `JBPermissions` are assumed to be valid, and if `initialProjectIdOwner != 0`, deployers must understand whether that project already exists.
 
 ## 2. Known Risks
 
@@ -29,7 +29,7 @@ This file covers the ownership-model risks in `JBOwnable`: dynamic ownership thr
 - **Two ownership modes can confuse integrations.** Setting both `newOwner` and `projectId` is disallowed, but integrators still need to check which mode is active.
 - **`renounceOwnership` is final.** Once called, `owner()` resolves to `address(0)` and owner-gated functions stop working permanently unless a downstream contract adds its own recovery path.
 - **Constructor pre-binding can intentionally lock the contract.** If a deployer points ownership at a future project ID, `owner()` resolves to `address(0)` until that project exists.
-- **`PROJECTS == address(0)` breaks project-owned mode.** The constructor defends against this, but wrappers should still treat it as a high-signal deployment surface.
+- **`PROJECTS == address(0)` breaks project-owned mode.** This is a deployment-layer invariant, not a runtime-supported configuration.
 - **Unminted project ID ownership.** Contracts using `JBOwnableOverrides` can be configured with an `initialProjectIdOwner` that references a project ID not yet minted. The first account to mint that sequential project ID will become the effective owner of the contract. Deployers must ensure the referenced project ID is already minted, or deploy the ownable contract and the project in the same transaction to prevent front-running.
 
 ## 3. Accepted Behaviors
@@ -49,4 +49,3 @@ This file covers the ownership-model risks in `JBOwnable`: dynamic ownership thr
 - `permissionId` resets to `0` on every ownership transfer
 - after `renounceOwnership()`, `jbOwner()` returns `(address(0), 0, 0)` and no address can pass `_checkOwner()`
 - `transferOwnershipToProject(projectId)` reverts for all `projectId > PROJECTS.count()` at call time
-- `initialProjectIdOwner != 0` with `PROJECTS == address(0)` always reverts during construction

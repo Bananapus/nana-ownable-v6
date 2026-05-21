@@ -31,10 +31,6 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// @param projectCount The current number of minted projects.
     error JBOwnableOverrides_ProjectDoesNotExist(uint256 projectId, uint256 projectCount);
 
-    /// @notice Thrown when project-based ownership is requested without a `JBProjects` contract.
-    /// @param projectId The project owner ID that requires a non-zero `JBProjects` contract.
-    error JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner(uint256 projectId);
-
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
@@ -70,8 +66,9 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// revert until that project is created, leaving the contract unusable. Deployers must ensure that the referenced
     /// project is minted before or atomically with this contract's deployment — this is a deployment trust
     /// assumption.
-    /// @param permissions A contract storing permissions.
-    /// @param projects Mints ERC-721s that represent project ownership and transfers.
+    /// @param permissions A contract storing permissions. Assumed to be a valid deployment-time dependency.
+    /// @param projects Mints ERC-721s that represent project ownership and transfers. Assumed to be a valid
+    /// deployment-time dependency.
     /// @param initialOwner The owner if the `initialProjectIdOwner` is 0 (until ownership is transferred).
     /// @param initialProjectIdOwner The ID of the Juicebox project whose owner is this contract's owner (until
     /// ownership is transferred).
@@ -84,13 +81,6 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         JBPermissioned(permissions)
     {
         PROJECTS = projects;
-
-        // If using project-based ownership, the PROJECTS contract must be provided.
-        // Deploying with projects=address(0) and a non-zero projectId would permanently disable
-        // ownership resolution, as all ownerOf() calls would revert on the zero address.
-        if (initialProjectIdOwner != 0 && address(projects) == address(0)) {
-            revert JBOwnableOverrides_ZeroAddressProjectsWithProjectOwner({projectId: initialProjectIdOwner});
-        }
 
         // We force the inheriting contract to set an owner, as there is a low chance someone will use `JBOwnable` to
         // create an unowned contract.
