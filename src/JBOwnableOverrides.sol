@@ -13,9 +13,9 @@ import {JBOwner} from "./structs/JBOwner.sol";
 /// @notice Abstract base implementing Juicebox-aware ownership resolution, transfer, and permission delegation.
 /// Ownership is either address-based (a fixed EOA/contract) or project-based (whoever holds the project's ERC-721
 /// NFT). The owner can delegate access to other addresses by configuring a `permissionId` in `JBPermissions`.
-/// @dev Stale permission detection: when ownership changes (e.g. project NFT transferred), the `permissionId` is
-/// effectively ignored until the new owner explicitly re-sets it — preventing the previous owner's delegates from
-/// retaining access.
+/// @dev Project NFT transfers do not update stored owner data. A nonzero `permissionId` is only effective while the
+/// resolved owner still equals `_permissionOwner`, the owner who last set that ID. If the NFT leaves and later returns
+/// to that owner, their still-granted delegate permissions become effective again.
 abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -49,8 +49,8 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     // -------------------- internal stored properties ------------------- //
     //*********************************************************************//
 
-    /// @notice The resolved owner address at the time permissionId was last set.
-    /// @dev Used to detect stale permissions after ownership changes (e.g., NFT transfer).
+    /// @notice The resolved owner address at the time `permissionId` was last set.
+    /// @dev Used to ignore delegated permissions while project ownership is held by someone else.
     address internal _permissionOwner;
 
     //*********************************************************************//
@@ -62,10 +62,9 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// To restrict access to a specific address, pass that address as the `initialOwner` and `0` as the
     /// `initialProjectIdOwner`.
     /// @dev The owner can give owner access to other addresses through the `permissions` contract.
-    /// @dev If `initialProjectIdOwner` references a project ID that has not yet been minted, all ownership checks will
-    /// revert until that project is created, leaving the contract unusable. Deployers must ensure that the referenced
-    /// project is minted before or atomically with this contract's deployment — this is a deployment trust
-    /// assumption.
+    /// @dev If `initialProjectIdOwner` references an unminted project, `owner()` resolves to `address(0)` and
+    /// owner-gated calls revert until that project is created. The first account to mint that project becomes the
+    /// effective owner, so deployers must control the mint sequence.
     /// @param permissions A contract storing permissions. Assumed to be a valid deployment-time dependency.
     /// @param projects Mints ERC-721s that represent project ownership and transfers. Assumed to be a valid
     /// deployment-time dependency.
@@ -82,18 +81,14 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     {
         PROJECTS = projects;
 
-        // We force the inheriting contract to set an owner, as there is a low chance someone will use `JBOwnable` to
-        // create an unowned contract.
-        // It's more likely both were accidentally set to `0`. If you really want an unowned contract, set the owner to
-        // an address and call `renounceOwnership()` in the constructor body.
+        // Require an initial owner. To deploy unowned on purpose, deploy with an address owner and call
+        // `renounceOwnership()` from the inheriting constructor.
         if (initialProjectIdOwner == 0 && initialOwner == address(0)) {
             revert JBOwnableOverrides_InvalidNewOwner({newOwner: initialOwner, projectId: initialProjectIdOwner});
         }
 
-        // No explicit project existence check here — if `initialProjectIdOwner` refers to an unminted project,
-        // `owner()` will resolve via `PROJECTS.ownerOf()`, which reverts for non-existent tokens. The try-catch
-        // in `owner()` treats this as renounced (returns address(0)), effectively locking the contract until
-        // the project is minted. This is acceptable because deployers control the constructor arguments.
+        // Constructors may pre-bind ownership to a project that will be minted later. Until then, `owner()` returns
+        // address(0); once minted, ownership follows whoever received that project NFT.
         _transferOwnership({newOwner: initialOwner, projectId: initialProjectIdOwner});
     }
 
@@ -103,9 +98,8 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
 
     /// @notice Returns the current owner's address. If ownership is project-based, this dynamically resolves to
     /// whoever holds the project's ERC-721 NFT right now.
-    /// @dev If `projectId` is non-zero, resolves via `PROJECTS.ownerOf()`. If that call reverts (e.g., burned NFT),
-    /// returns `address(0)` — effectively treating the contract as renounced. `JBProjects` V6 has no burn function,
-    /// so this is a defensive measure only.
+    /// @dev If `projectId` is non-zero, resolves via `PROJECTS.ownerOf()`. If that call reverts, returns
+    /// `address(0)`, making owner-gated functions fail closed.
     function owner() public view virtual returns (address) {
         JBOwner memory ownerInfo = jbOwner;
 
@@ -113,8 +107,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             return ownerInfo.owner;
         }
 
-        // Use try-catch to gracefully handle the case where the project NFT no longer exists.
-        // If ownerOf reverts, the contract is effectively renounced (returns address(0)).
+        // If the project owner cannot be read, expose the owner as zero instead of bubbling the upstream revert.
         try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
             return projectOwner;
         } catch {
@@ -127,10 +120,11 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     //*********************************************************************//
 
     /// @notice Reverts if the caller is not the owner (or an authorized delegate when `permissionId` is set).
-    /// @dev If `projectId` is non-zero and `PROJECTS.ownerOf()` reverts (e.g., burned NFT), the resolved owner is
-    /// `address(0)`, causing all `_checkOwner` calls to revert — equivalent to a renounced contract.
-    /// @dev Stale permission detection: if the resolved owner differs from `_permissionOwner` (set when
-    /// `setPermissionId` was last called), delegation is disabled until the new owner re-configures it.
+    /// @dev If `projectId` is non-zero and `PROJECTS.ownerOf()` reverts, the resolved owner is `address(0)`, causing
+    /// all `_checkOwner` calls to revert.
+    /// @dev A nonzero `permissionId` only delegates while the current resolved owner equals `_permissionOwner`.
+    /// Project NFT transfers therefore disable delegation for the new holder until they call `setPermissionId()`;
+    /// returning the NFT to the original `_permissionOwner` can reactivate their old delegate grants.
     function _checkOwner() internal view virtual {
         JBOwner memory ownerInfo = jbOwner;
 
@@ -138,7 +132,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         if (ownerInfo.projectId == 0) {
             resolvedOwner = ownerInfo.owner;
         } else {
-            // Use try-catch to gracefully handle the case where the project NFT no longer exists.
+            // Resolve the project owner dynamically; unreadable projects fail closed to address(0).
             try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
                 resolvedOwner = projectOwner;
             } catch {
@@ -146,14 +140,13 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             }
         }
 
-        // Detect stale permissions: if ownership changed since permissionId was set
-        // (e.g., project NFT transferred), treat permissionId as 0 (direct-owner-only).
+        // Ignore the stored permission ID while the project NFT is held by a different owner than the one who set it.
         uint8 effectivePermissionId = ownerInfo.permissionId;
         if (effectivePermissionId != 0 && resolvedOwner != _permissionOwner) {
             effectivePermissionId = 0;
         }
 
-        // When permissionId is 0 (direct-owner-only mode), bypass the permission system entirely.
+        // When delegation is disabled or stale, bypass the permission system entirely.
         // This ensures ROOT operators cannot act as owner when delegation is disabled.
         if (effectivePermissionId == 0) {
             if (_msgSender() != resolvedOwner) {
@@ -182,8 +175,8 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
 
     /// @notice Configures which `JBPermissions` permission ID grants delegate access to `onlyOwner` functions.
     /// Set to 0 to disable delegation entirely (only the direct owner can call).
-    /// @dev Can only be called by the current owner. Records the current owner so stale permissions are detected
-    /// if ownership later changes.
+    /// @dev Can only be called by the current owner. Records the current owner so delegation is ignored while a
+    /// different owner holds the project NFT.
     /// @param permissionId The permission ID to use for `onlyOwner` delegation.
     function setPermissionId(uint8 permissionId) public virtual override {
         _checkOwner();
@@ -216,7 +209,8 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             revert JBOwnableOverrides_InvalidNewOwner({newOwner: address(0), projectId: projectId});
         }
 
-        // Make sure the project exists to prevent permanent loss of contract control.
+        // Public project transfers require an already-minted project. Constructor pre-binding is the only path that
+        // can point at a future project ID.
         if (projectId > PROJECTS.count()) {
             revert JBOwnableOverrides_ProjectDoesNotExist({projectId: projectId, projectCount: PROJECTS.count()});
         }
@@ -229,7 +223,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     // ------------------------ internal functions ----------------------- //
     //*********************************************************************//
 
-    /// @notice Either `newOwner` or `newProjectId` is non-zero or both are zero. But they can never both be non-zero.
+    /// @notice Emits the ownership transfer event after resolving the visible new owner address.
     /// @dev This function exists because some contracts need to deploy contracts for a project before the project's NFT
     /// has been minted, so the transfer event resolves the project's current owner at emission time.
     /// @param previousOwner The address of the previous owner.
@@ -237,7 +231,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
     /// @param newProjectId The ID of the new owning project (zero if transferring to an address).
     function _emitTransferEvent(address previousOwner, address newOwner, uint88 newProjectId) internal virtual;
 
-    /// @notice Sets the permission ID the owner can use to give other addresses owner access.
+    /// @notice Sets the permission ID the current owner can use to delegate owner access.
     /// @dev Internal function without access restriction.
     /// @param permissionId The permission ID to use for `onlyOwner`.
     function _setPermissionId(uint8 permissionId) internal virtual {
@@ -252,20 +246,21 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         _transferOwnership({newOwner: newOwner, projectId: 0});
     }
 
-    /// @notice Transfers this contract's ownership to an address (`newOwner`) OR a Juicebox project (`projectId`).
+    /// @notice Transfers this contract's ownership to either an address (`newOwner`) or a Juicebox project
+    /// (`projectId`).
     /// @dev Updates this contract's `JBOwner` owner information and resets the `JBOwner.permissionId`.
     /// @dev If both `newOwner` and `projectId` are set, this will revert.
     /// @dev Internal function without access restriction.
     /// @param newOwner The address that should become this contract's owner.
     /// @param projectId The ID of the project whose owner should become this contract's owner.
     function _transferOwnership(address newOwner, uint88 projectId) internal virtual {
-        // Can't set both a new owner and a new project ID.
+        // Ownership has exactly one live mode: address owner, project owner, or neither after renounce.
         if (projectId != 0 && newOwner != address(0)) {
             revert JBOwnableOverrides_InvalidNewOwner({newOwner: newOwner, projectId: projectId});
         }
-        // Load the owner information from storage.
+        // Snapshot the current owner configuration before replacing it.
         JBOwner memory ownerInfo = jbOwner;
-        // Get the address of the old owner. Use try-catch for project-based ownership in case the NFT was burned.
+        // Resolve the previous owner for the event; unreadable project ownership is reported as address(0).
         address oldOwner;
         if (ownerInfo.projectId == 0) {
             oldOwner = ownerInfo.owner;
@@ -276,8 +271,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
                 oldOwner = address(0);
             }
         }
-        // Update the stored owner information to the new owner and reset the `permissionId`.
-        // This is to prevent permissions clashes for the new user/owner.
+        // Explicit ownership transfers clear delegated access and the owner who authorized it.
         jbOwner = JBOwner({owner: newOwner, projectId: projectId, permissionId: 0});
         _permissionOwner = address(0);
         // Emit a transfer event with the new owner's address.

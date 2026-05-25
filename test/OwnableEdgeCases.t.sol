@@ -226,8 +226,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 7: Delegated access — permission granted on project, then NFT
-    //         transferred, old delegate loses access
+    // Test 7: Delegated access is ignored after the project NFT leaves the owner who set it
     // =========================================================================
     function test_delegatedAccess_lostAfterNFTTransfer() public {
         uint256 projectId = projects.createFor(alice);
@@ -257,8 +256,7 @@ contract OwnableEdgeCases is Test {
         projects.transferFrom(alice, bob, projectId);
 
         // Charlie's delegation was from alice. Now owner is bob.
-        // Charlie should lose access because _checkOwner resolves to bob,
-        // and charlie has no permissions from bob.
+        // Charlie loses access because _checkOwner resolves to bob, and charlie has no permissions from bob.
         vm.prank(charlie);
         vm.expectRevert();
         ownable.protectedMethod();
@@ -394,7 +392,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 14: OwnershipTransferred event uses _msgSender() (fix)
+    // Test 14: OwnershipTransferred event uses _msgSender()
     // =========================================================================
     /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
     ///         the OwnershipTransferred event's caller field should reflect the
@@ -417,7 +415,7 @@ contract OwnableEdgeCases is Test {
     }
 
     // =========================================================================
-    // Test 15: PermissionIdChanged event uses _msgSender() (fix)
+    // Test 15: PermissionIdChanged event uses _msgSender()
     // =========================================================================
     /// @notice When a subclass overrides _msgSender() (e.g., for ERC-2771),
     ///         the PermissionIdChanged event's caller field should reflect the

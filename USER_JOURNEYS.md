@@ -58,6 +58,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 - teams grant a broader permission than intended
 - downstream reviewers forget that `onlyOwner` may resolve through permissions instead of direct ownership
 - operators keep stale permissions after governance changes
+- a project NFT round trip reactivates a prior owner's still-granted delegated permissions
 
 **Postconditions**
 - the chosen operator can satisfy `onlyOwner` without receiving direct ownership of the project or contract
@@ -100,8 +101,9 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 3. Renounce only when permanent admin loss is intentional.
 
 **Failure Modes**
-- ownership is burned even though the downstream contract still needs administration
-- teams forget that delegated permissions reset across ownership changes
+- ownership is renounced even though the downstream contract still needs administration
+- teams forget that explicit ownable transfers reset delegated permissions while project NFT transfers only make stored
+  permissions stale
 
 **Postconditions**
 - control moves to the chosen address or project, or is intentionally removed

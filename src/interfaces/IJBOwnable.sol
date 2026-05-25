@@ -22,10 +22,11 @@ interface IJBOwnable {
     /// @return projects The `IJBProjects` contract.
     function PROJECTS() external view returns (IJBProjects projects);
 
-    /// @notice The current ownership state — who owns this contract and how permission delegation is configured.
+    /// @notice The stored ownership state and delegation policy.
     /// @return owner The owner address (used when `projectId` is 0).
     /// @return projectId The Juicebox project whose NFT holder is the owner (0 if address-based ownership).
-    /// @return permissionId The permission ID that delegates can use to act as owner via `JBPermissions`.
+    /// @return permissionId The stored permission ID. It only delegates while the resolved owner matches the owner who
+    /// last set it.
     function jbOwner() external view returns (address owner, uint88 projectId, uint8 permissionId);
 
     /// @notice Returns the current owner's address.

@@ -22,7 +22,7 @@ contract RootPermissionBypassesPermissionIdZeroTest is Test {
         projects = new JBProjects(address(this), address(0), address(0));
     }
 
-    /// @notice After fix: ROOT operator is rejected when permissionId=0 (direct-owner-only mode).
+    /// @notice ROOT operators are rejected when `permissionId` is 0 (direct-owner-only mode).
     function test_rootPermissionRejectedWhenPermissionIdIsZero() public {
         uint256 projectId = projects.createFor(alice);
         // forge-lint: disable-next-line(unsafe-typecast)

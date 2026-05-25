@@ -46,8 +46,8 @@ contract PermissionDriftAfterProjectTransferTest is Test {
         assertEq(storedProjectId, projectId, "ownable remains project-owned");
         assertEq(storedPermissionId, 42, "old owner's permissionId survived the ownership change in storage");
 
-        // After the fix, the stale permissionId is ignored because the resolved owner
-        // (bob) differs from _permissionOwner (alice). The operator cannot seize ownership.
+        // The stale permissionId is ignored because the resolved owner (bob) differs from _permissionOwner (alice).
+        // The operator cannot seize ownership.
         vm.prank(operator);
         vm.expectRevert();
         ownable.transferOwnership(operator);

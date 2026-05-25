@@ -49,14 +49,11 @@ contract PermissionIdNFTTransferTest is Test {
 
         assertEq(ownable.owner(), buyer, "project NFT transfer changes the effective owner");
 
-        // The stored permissionId is still 30 in the struct, but the fix makes it
-        // stale because the owner changed since the permissionId was set.
+        // The stored permissionId remains 30, but it is stale because the owner changed since it was set.
         (,, uint8 inheritedPermissionId) = ownable.jbOwner();
         assertEq(inheritedPermissionId, 30, "struct still holds old permissionId");
 
-        // The stale permissionId should NOT allow the buyer's operator through.
-        // After the fix, _checkOwner treats the permissionId as 0 (direct-owner-only)
-        // because the resolved owner != _permissionOwner.
+        // The buyer's operator cannot use a permissionId that was set by the seller.
         vm.prank(buyerOperator);
         vm.expectRevert();
         ownable.protectedMethod();
@@ -90,7 +87,7 @@ contract PermissionIdNFTTransferTest is Test {
         vm.prank(buyer);
         ownable.setPermissionId(30);
 
-        // Now buyerOperator should be able to call the protected method.
+        // The buyer's operator can now call the protected method.
         vm.prank(buyerOperator);
         ownable.protectedMethod();
     }

@@ -50,6 +50,8 @@ This package is a small ownership adapter:
 - ownership may resolve to a project NFT holder instead of a fixed address, so caching `owner()` off-chain can go stale
 - `owner()` can resolve to `address(0)` if the referenced project NFT is invalid or unreadable, which effectively renounces the contract
 - delegated operator access depends on a chosen permission ID, not on a generic admin role
+- explicit ownership transfers reset the permission ID, but project NFT transfers do not mutate stored owner data
+- a project NFT round trip back to the owner who last set `permissionId` can reactivate that owner's still-granted delegates
 - ownership transfer and permission-ID updates are part of the security model, not just convenience helpers
 
 ## Where State Lives
@@ -64,6 +66,8 @@ This package is a small ownership adapter:
 2. `test/OwnableAttacks.t.sol`
 3. `test/RegressionUnmintedProjectHijack.t.sol`
 4. `test/regression/BurnLockProtection.t.sol`
+5. `test/regression/PermissionIdNFTTransfer.t.sol`
+6. `test/audit/CodexNemesisPermissionReactivation.t.sol`
 
 ## Install
 
@@ -95,7 +99,8 @@ test/
 
 - if ownership is tied to a project NFT and that NFT becomes unreachable, the contract is effectively locked
 - delegated access depends on a chosen permission ID, so bad permission selection is an operational risk
-- permission IDs reset on ownership transfer, which is safer by default but easy to miss
+- permission IDs reset on explicit ownership transfers; project NFT transfers leave the ID stored but stale unless the
+  resolved owner still matches the owner who set it
 - transferring ownership to a project validates that the project exists at transfer time, but later project invalidation can still collapse effective ownership to `address(0)`
 
 ## For AI Agents

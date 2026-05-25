@@ -383,6 +383,9 @@ runs = 1024
 depth = 100
 fail_on_revert = false
 
+[lint]
+exclude_lints = ["mixed-case-variable", "pascal-case-struct"]
+
 [fmt]
 number_underscore = "thousands"
 multiline_func_header = "all"
@@ -556,7 +559,7 @@ CI checks formatting via `forge fmt --check`.
 
 - Solidity dependencies via npm (`node_modules/`)
 - `forge-std` as a git submodule in `lib/`
-- Sphinx plugins as a devDependency
+- Sphinx plugins as a devDependency only in repos that use Sphinx
 - Cross-repo references use `file:../sibling-repo` in local development
 - Published versions use semver ranges (`^0.0.x`) for npm
 

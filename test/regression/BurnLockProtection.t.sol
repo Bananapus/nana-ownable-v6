@@ -11,9 +11,8 @@ import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /// @title BurnLockProtection
-/// @notice Verifies that if a project NFT is burned/invalidated,
-///         owner() returns address(0) and _checkOwner() reverts gracefully instead of
-///         permanently locking the contract with an unrecoverable revert.
+/// @notice Verifies that if project ownership becomes unreadable, `owner()` returns address(0) and `_checkOwner()`
+/// reverts gracefully instead of bubbling the upstream `ownerOf` revert.
 contract BurnLockProtection is Test {
     IJBProjects projects;
     IJBPermissions permissions;
@@ -26,45 +25,41 @@ contract BurnLockProtection is Test {
         projects = new JBProjects(address(123), address(0), address(0));
     }
 
-    /// @notice When a project NFT is burned (simulated via mockCallRevert), owner() should
-    ///         return address(0) instead of reverting — contract degrades to "renounced" state.
+    /// @notice When `ownerOf` reverts, `owner()` returns address(0) instead of reverting.
     function test_burnedProjectNFT_ownerReturnsZero() public {
         uint256 projectId = projects.createFor(alice);
         // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
-        // Verify normal operation first.
-        assertEq(ownable.owner(), alice, "Owner should be alice before burn");
+        // Verify normal operation before making project ownership unreadable.
+        assertEq(ownable.owner(), alice, "Owner should be alice before ownerOf reverts");
 
-        // Simulate project NFT burn by making ownerOf revert for this projectId.
+        // Make `ownerOf` revert for this project ID.
         vm.mockCallRevert(
             address(projects), abi.encodeWithSelector(IERC721.ownerOf.selector, projectId), "ERC721: invalid token ID"
         );
 
-        // After burn, owner() should return address(0) — NOT revert.
+        // Unreadable project ownership fails closed to address(0).
         address resolvedOwner = ownable.owner();
-        assertEq(resolvedOwner, address(0), "owner() should return address(0) when project NFT is burned");
+        assertEq(resolvedOwner, address(0), "owner() should return address(0) when ownerOf reverts");
     }
 
-    /// @notice When a project NFT is burned, _checkOwner() should revert with the standard
-    ///         Unauthorized error (not an unrecoverable ownerOf revert), making the contract
-    ///         behave as if ownership was renounced.
+    /// @notice When `ownerOf` reverts, `_checkOwner()` should revert with the standard unauthorized error.
     function test_burnedProjectNFT_checkOwnerRevertsGracefully() public {
         uint256 projectId = projects.createFor(alice);
         // forge-lint: disable-next-line(unsafe-typecast)
         MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
-        // Alice can call the protected method before burn.
+        // Alice can call the protected method while project ownership is readable.
         vm.prank(alice);
         ownable.protectedMethod();
 
-        // Simulate project NFT burn.
+        // Make project ownership unreadable.
         vm.mockCallRevert(
             address(projects), abi.encodeWithSelector(IERC721.ownerOf.selector, projectId), "ERC721: invalid token ID"
         );
 
-        // After burn, nobody can call protected methods — but the revert is graceful
-        // (Unauthorized from _requirePermissionFrom, not a raw ownerOf revert).
+        // Nobody can call protected methods, and the revert comes from the ownable permission check.
         vm.prank(alice);
         vm.expectRevert();
         ownable.protectedMethod();
@@ -74,7 +69,7 @@ contract BurnLockProtection is Test {
         ownable.protectedMethod();
     }
 
-    /// @notice Address-based ownership is unaffected by the try-catch change.
+    /// @notice Address-based ownership is unaffected by unreadable project ownership.
     function test_addressBasedOwnership_unaffectedByTryCatch() public {
         MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
 
@@ -92,7 +87,7 @@ contract BurnLockProtection is Test {
         ownable.protectedMethod();
     }
 
-    /// @notice Normal project-based ownership still works correctly after the fix.
+    /// @notice Normal project-based ownership still works while `ownerOf` is readable.
     function test_normalProjectOwnership_stillWorks() public {
         uint256 projectId = projects.createFor(alice);
         // forge-lint: disable-next-line(unsafe-typecast)

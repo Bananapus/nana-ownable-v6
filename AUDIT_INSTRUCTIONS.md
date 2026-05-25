@@ -4,13 +4,14 @@ This repo provides ownership helpers that can follow Juicebox project NFTs inste
 
 ## Audit Objective
 
-There is a billion dollars of well-meaning projects' money in the Juicebox Money Engine, growing exponentially. Your job is to hack it before anyone else. Whoever hacks it first saves/steals the money, and you are obsessed with being this winner, while also being a steward of the protocol and wanting it to keep growing safely.
+Find any path that lets the wrong caller pass owner checks, strands a valid owner, or causes downstream contracts to
+reason from stale ownership data.
 
 Suggestions of where to look:
 
 - let unauthorized actors satisfy owner checks
-- break ownership updates when a project NFT moves, burns, or locks
-- let override logic produce a different owner than the project system intends
+- break ownership updates when a project NFT moves or becomes unreadable
+- make delegated permission IDs effective for the wrong owner
 - leave dependent repos with stale or permanently wrong ownership views
 
 ## Scope
@@ -32,7 +33,7 @@ In scope:
 These contracts abstract "owner" as a project-based identity. Downstream repos use them to:
 
 - treat a Juicebox project owner as contract owner
-- apply per-project override rules
+- allow project-scoped delegated operators to satisfy `onlyOwner`
 - keep admin power aligned with project NFT ownership instead of a static address
 
 ## Roles And Privileges
@@ -40,7 +41,7 @@ These contracts abstract "owner" as a project-based identity. Downstream repos u
 | Role | Powers | How constrained |
 |------|--------|-----------------|
 | Project NFT owner | Become the effective contract owner | Should update automatically with NFT transfers |
-| Override authority | Set alternative owner resolution where allowed | Must not outrank project ownership unexpectedly |
+| Delegated operator | Satisfy `onlyOwner` through a configured permission ID | Only works while the resolved owner matches the owner who set that ID |
 
 ## Integration Assumptions
 
@@ -52,16 +53,17 @@ These contracts abstract "owner" as a project-based identity. Downstream repos u
 
 1. Owner resolution is correct.  
    For any supported mode, `owner()` and owner checks must resolve to the intended authority and no one else.
-2. Burn and lock behavior is safe.  
-   If project ownership is intentionally burned or locked, the helper must not accidentally reopen control or brick valid admin paths.
-3. Override precedence is coherent.  
-   Overrides must not silently supersede project ownership in cases the design does not permit.
+2. Unreadable project ownership fails closed.
+   If `ownerOf` cannot resolve, owner checks must fail without bubbling brittle upstream errors.
+3. Delegated permission lifetime is coherent.
+   Explicit ownable transfers must clear `permissionId`; project NFT transfers must ignore stale IDs unless the NFT
+   returns to the owner who set them.
 
 ## Attack Surfaces
 
 - owner resolution after project NFT transfer
-- zero-address, burn, and lock states
-- override configuration and precedence
+- zero-address and unreadable-project states
+- delegated permission configuration and `_permissionOwner` gating
 - downstream assumptions that cache owner state instead of re-reading it
 
 ## Verification

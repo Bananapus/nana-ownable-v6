@@ -49,8 +49,8 @@ contract ProjectTransferPermissionPolicyTest is Test {
         (,, uint8 inheritedPermissionId) = ownable.jbOwner();
         assertEq(inheritedPermissionId, 30, "seller-selected permission policy persists in storage");
 
-        // After the fix, the stale permissionId is ignored because the resolved owner (buyer)
-        // differs from _permissionOwner (seller). The operator is blocked.
+        // The stale permissionId is ignored because the resolved owner (buyer) differs from _permissionOwner (seller).
+        // The operator is blocked.
         vm.prank(operator);
         vm.expectRevert();
         ownable.protectedMethod();

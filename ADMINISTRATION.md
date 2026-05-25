@@ -6,7 +6,7 @@
 | --- | --- |
 | Scope | Ownership resolution primitive used by downstream repos |
 | Control posture | Primitive only; control depends on the inheriting contract |
-| Highest-risk actions | Transferring ownership to the wrong address or project and assuming delegated operators survive transfer |
+| Highest-risk actions | Transferring ownership to the wrong address/project and misreading delegated-permission lifetime |
 | Recovery posture | Recovery depends on the inheriting contract and the still-recognized current owner |
 
 ## Purpose
@@ -18,7 +18,9 @@
 - ownership can be address-based or project-based
 - delegated operator checks run through `JBPermissions`
 - transfer and renounce semantics are part of the primitive
-- delegated permission resets on ownership transfer
+- explicit ownership transfers reset delegated permission state
+- project NFT transfers leave `permissionId` stored but ineffective while the current owner differs from
+  `_permissionOwner`
 
 ## Roles
 
@@ -41,20 +43,24 @@ The meaningful control surfaces are inherited by downstream contracts:
 ## Immutable And One-Way
 
 - project ownership changes dynamically with project NFT transfers
-- delegated permission ID resets on ownership transfer
+- delegated permission ID resets on explicit ownership transfer or renounce
+- project NFT transfer can make a stored permission ID stale without clearing it from storage
 - renouncing ownership is final unless the inheriting contract adds a separate recovery path
 
 ## Operational Notes
 
 - treat project-based ownership as live routing, not a snapshot
-- do not assume an operator permission survives ownership transfer
+- distinguish explicit ownership transfer from project NFT transfer: the former clears `permissionId`, the latter only
+  changes whether the stored ID is effective
+- revoke old `JBPermissions` grants when a project NFT round trips back to a prior owner
 - treat `setPermissionId(...)` as a real authority change because it rewires which delegated permission bit counts as owner access
 - review the inheriting contract, not just this primitive, to understand the full admin surface
 
 ## Machine Notes
 
 - do not conclude authority from this repo alone; follow the inheriting contract's `onlyOwner` surfaces
-- treat ownership transfer as potentially changing both the owner identity and the usable delegated permission ID
+- treat explicit ownership transfer as changing both owner identity and usable delegated permission ID
+- treat project NFT transfer as changing owner identity while preserving stored `permissionId`
 - if the current permission ID is undocumented, inspect `jbOwner.permissionId` before reasoning about delegated owner access
 - if a downstream repo uses project-based ownership, re-evaluate owner resolution after every project NFT transfer
 
@@ -67,7 +73,7 @@ The meaningful control surfaces are inherited by downstream contracts:
 
 - this repo does not create a new permission namespace
 - it cannot make an inheriting contract safer than that contract's own privileged functions
-- it cannot preserve delegated operators across ownership transfer by default
+- it clears delegated operators only on explicit ownership-transfer paths
 
 ## Source Map
 

@@ -65,7 +65,7 @@ contract OwnableAttacks is Test {
         ownable.renounceOwnership();
         assertEq(ownable.owner(), address(0), "Should be renounced");
 
-        // Now NOBODY can call — not alice, not bob, not anyone.
+        // No address can call after ownership is renounced.
         vm.prank(alice);
         vm.expectRevert();
         ownable.protectedMethod();
@@ -82,8 +82,7 @@ contract OwnableAttacks is Test {
     // =========================================================================
     // Test 3: Permission ID reset on transfer
     // =========================================================================
-    /// @notice After any ownership transfer, permissionId should reset to 0.
-    ///         This prevents stale permission delegation.
+    /// @notice Explicit ownership transfer resets `permissionId` to 0.
     function test_permissionIdResetOnTransfer() public {
         uint256 projectId = projects.createFor(alice);
         // forge-lint: disable-next-line(unsafe-typecast)
@@ -107,7 +106,7 @@ contract OwnableAttacks is Test {
     // =========================================================================
     // Test 4: Stale owner after NFT transfer
     // =========================================================================
-    /// @notice After transferring project NFT, old owner should lose access.
+    /// @notice After transferring the project NFT, the previous owner loses access.
     function test_staleOwner_afterNFTTransfer() public {
         uint256 projectId = projects.createFor(alice);
         // forge-lint: disable-next-line(unsafe-typecast)
