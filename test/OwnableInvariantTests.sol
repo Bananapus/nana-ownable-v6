@@ -29,12 +29,10 @@ contract OwnableInvariantTests is Test {
         }
     }
 
-    /// @notice The permissionId is always reset to 0 on ownership transfers.
+    /// @notice Explicit ownership transfers leave the handler with `permissionId` reset to 0.
     function invariant_permissionIdResetOnTransfer() public {
         (,, uint8 permissionId) = handler.OWNABLE().jbOwner();
-        // After any ownership change, permissionId should be 0 (reset by _transferOwnership).
-        // This is always true because the handler only calls transfer/renounce functions,
-        // and never calls setPermissionId.
+        // The handler only calls transfer and renounce functions, and never calls `setPermissionId`.
         assertEq(permissionId, 0, "permissionId should be 0 after transfers");
     }
 

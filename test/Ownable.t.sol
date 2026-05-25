@@ -370,7 +370,7 @@ contract OwnableTest is Test {
         // Create a project for the owner.
         uint256 _projectId = projects.createFor(projectOwner);
 
-        // Should revert because we set both a owner and a projectOwner
+        // Setting both an address owner and a project owner must revert.
         vm.expectRevert(
             abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, owner, _projectId)
         );
@@ -381,7 +381,7 @@ contract OwnableTest is Test {
     }
 
     function testCantInitializeAsRenounced() public {
-        // Should revert because we set both a owner and a projectOwner
+        // Initializing with no owner must revert.
         vm.expectRevert(
             abi.encodeWithSelector(JBOwnableOverrides.JBOwnableOverrides_InvalidNewOwner.selector, address(0), 0)
         );

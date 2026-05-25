@@ -8,7 +8,7 @@ import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.s
 import {JBOwnableOverrides} from "./JBOwnableOverrides.sol";
 
 /// @notice Juicebox-aware ownership for any contract. Inherit this and apply the `onlyOwner` modifier to restrict
-/// functions to the project owner, a fixed address, or anyone the owner has granted permission to via `JBPermissions`.
+/// functions to the project owner, a fixed address, or an effective delegate authorized through `JBPermissions`.
 /// @dev Ownership resolves dynamically: if `JBOwner.projectId` is set, the holder of that project's ERC-721 NFT is
 /// the owner. If `projectId` is 0, the stored `JBOwner.owner` address is used instead. The owner can delegate access
 /// to other addresses by setting a `permissionId` and granting that permission through `JBPermissions`.
@@ -50,11 +50,11 @@ contract JBOwnable is JBOwnableOverrides {
     // ------------------------ internal functions ----------------------- //
     //*********************************************************************//
 
-    /// @notice Either `newOwner` or `newProjectId` is non-zero or both are zero. But they can never both be non-zero.
-    /// @dev This function exists because some contracts need to deploy contracts for a project before the project's NFT
-    /// has been minted, so the transfer event resolves the project's current owner at emission time.
-    /// @dev Unlike `_transferOwnership` (which uses try-catch to resolve the *old* owner in case its project NFT was
-    /// burned), this function resolves the *new* owner's current address for event purposes only.
+    /// @notice Emits the ownership transfer event after resolving the visible new owner address.
+    /// @dev Constructor pre-binding can point ownership at a project before the project's NFT has been minted, so the
+    /// event resolves the project's current owner at emission time.
+    /// @dev Unlike `_transferOwnership` (which uses try-catch to resolve the *old* owner in case its project NFT is
+    /// unreadable), this function resolves the *new* owner's current address for event purposes only.
     /// If the new project NFT does not exist yet, the event uses `address(0)` until ownership can resolve normally.
     function _emitTransferEvent(
         address previousOwner,
@@ -70,8 +70,7 @@ contract JBOwnable is JBOwnableOverrides {
             try PROJECTS.ownerOf(newProjectId) returns (address projectOwner) {
                 resolvedNewOwner = projectOwner;
             } catch {
-                // Allow constructor-time handoff to an unminted project. Ownership resolves dynamically
-                // once the project NFT exists, so the transfer event uses address(0) until then.
+                // Pre-bound future projects have no visible owner yet, so the event reports address(0).
                 resolvedNewOwner = address(0);
             }
         }

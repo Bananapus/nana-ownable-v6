@@ -37,5 +37,7 @@ Ownership adapter for contracts that should follow Juicebox project ownership in
 - Start in [`src/JBOwnableOverrides.sol`](./src/JBOwnableOverrides.sol) when the question is about who the effective owner is or why `onlyOwner` passed or failed.
 - Treat ownership transfer and delegated permission resets as security-sensitive.
 - Project-based ownership can intentionally become unusable if it points at an unminted or invalid project.
+- Project NFT transfers preserve stored `permissionId`; check `_permissionOwner` before deciding whether delegation is
+  active.
 - Unminted or unexpectedly transferred project NFTs can change the effective owner surface. Check the project lifecycle, not just this adapter.
 - When a bug looks like project ownership itself, confirm whether the real source is upstream in `nana-core-v6` rather than this adapter.

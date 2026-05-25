@@ -13,7 +13,11 @@ Ownership can follow the current holder of a Juicebox project NFT instead of sta
 ## Core Invariants
 
 - project-owned contracts must resolve the owner dynamically from the current project NFT holder
-- the delegated permission ID resets on ownership transfer
+- explicit ownership transfers reset the delegated permission ID
+- project NFT transfers do not mutate stored owner data; `_permissionOwner` decides whether a stored permission ID is
+  effective
+- if the project NFT returns to the owner who last set `permissionId`, that owner's still-granted delegates can become
+  effective again
 - pointing ownership at an unminted project can temporarily lock the contract until that project exists
 - an invalid or otherwise unresolvable project NFT effectively renounces ownership
 - this repo should stay a drop-in primitive, not grow product-specific access rules
@@ -42,7 +46,8 @@ onlyOwner modifier
   -> load packed owner state
   -> if project-owned, resolve the current project NFT holder
   -> otherwise use the stored owner address
-  -> accept either the resolved owner or an operator with the configured JB permission
+  -> ignore delegated permissions if the resolved owner differs from _permissionOwner
+  -> accept either the resolved owner or an operator with the effective JB permission
 ```
 
 ## Accounting Model
@@ -60,7 +65,7 @@ No treasury accounting lives here. The important state is ownership resolution d
 - be conservative with transfer and renounce semantics
 - if event emission or transfer behavior changes, inspect deployer wrappers and inheriting repos
 - if project-based ownership semantics change, re-check unminted-project and unresolvable-project behavior explicitly
-- do not make delegated permission IDs sticky across ownership transfers
+- keep explicit ownership-transfer resets and project-NFT-transfer staleness checks distinct
 
 ## Canonical Checks
 
@@ -72,6 +77,9 @@ No treasury accounting lives here. The important state is ownership resolution d
 - unminted-project and burn-lock safety:
   `test/RegressionUnmintedProjectHijack.t.sol`
   `test/regression/BurnLockProtection.t.sol`
+- permission staleness and reactivation:
+  `test/regression/PermissionIdNFTTransfer.t.sol`
+  `test/audit/CodexNemesisPermissionReactivation.t.sol`
 - ownership-state invariants:
   `test/OwnableInvariantTests.sol`
 
@@ -86,7 +94,9 @@ No treasury accounting lives here. The important state is ownership resolution d
 - `test/OwnableAttacks.t.sol`
 - `test/RegressionUnmintedProjectHijack.t.sol`
 - `test/regression/BurnLockProtection.t.sol`
-- `test/regression/ZeroAddressValidation.t.sol`
+- `test/regression/PermissionIdNFTTransfer.t.sol`
+- `test/regression/RootPermissionBypassesPermissionIdZero.t.sol`
+- `test/audit/CodexNemesisPermissionReactivation.t.sol`
 - `test/OwnableInvariantTests.sol`
 - `references/runtime.md`
 - `references/operations.md`
