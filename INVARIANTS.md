@@ -1,7 +1,5 @@
 # Invariants of `nana-ownable-v6`
 
-Last updated: 2026-05-28.
-
 Scope: the two production contracts in `src/` — `JBOwnable` (concrete) and `JBOwnableOverrides` (abstract base) — plus their `IJBOwnable` interface in `src/interfaces/` and `JBOwner` struct in `src/structs/`. The package is a Juicebox-aware drop-in replacement for OpenZeppelin's `Ownable`: a contract inheriting `JBOwnable` resolves its owner either to a fixed address (address mode) or dynamically to the current holder of a Juicebox project's ERC-721 NFT (project mode), with an optional `JBPermissions` ID that delegates `onlyOwner` access to addresses authorized by the current resolved owner.
 
 This file is the per-repo scoped invariants doc. The protocol-wide guarantees for the seven deployed revnets live in [`../INVARIANTS.md`](../INVARIANTS.md); `JBOwnable` itself does not appear in that file because it is a base contract — its invariants flow up into every consumer (`JB721TiersHook`, the buyback/router/Defifa hook surfaces, `CTPublisher`'s owner lookup, etc.). The cross-cutting "NFT-transfer auto-disables delegation" design contract lives in `RISKS.md` and `ARCHITECTURE.md`; this file enumerates the operational invariants that implement that contract.
