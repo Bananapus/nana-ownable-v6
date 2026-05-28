@@ -2,12 +2,17 @@
 
 `@bananapus/ownable-v6` is an ownership helper for contracts that should be controlled by a Juicebox project instead of a fixed wallet. It keeps the familiar `Ownable` shape while letting ownership follow a project NFT and optional delegated permissions.
 
-Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)  
-User journeys: [USER_JOURNEYS.md](./USER_JOURNEYS.md)  
-Skills: [SKILLS.md](./SKILLS.md)  
-Risks: [RISKS.md](./RISKS.md)  
-Administration: [ADMINISTRATION.md](./ADMINISTRATION.md)  
-Audit instructions: [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md)
+## Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — system architecture and component interactions
+- [INVARIANTS.md](./INVARIANTS.md) — guarantees enforced by the contracts
+- [USER_JOURNEYS.md](./USER_JOURNEYS.md) — typical flows for each actor
+- [RISKS.md](./RISKS.md) — known risks and operational caveats
+- [ADMINISTRATION.md](./ADMINISTRATION.md) — administrative powers and lifecycle
+- [SKILLS.md](./SKILLS.md) — reusable patterns and gotchas for builders
+- [STYLE_GUIDE.md](./STYLE_GUIDE.md) — code style conventions
+- [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md) — guidance for auditors
+- [CHANGELOG.md](./CHANGELOG.md) — release notes
 
 ## Overview
 
