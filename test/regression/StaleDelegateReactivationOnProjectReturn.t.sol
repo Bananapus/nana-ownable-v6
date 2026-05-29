@@ -11,7 +11,9 @@ import {IJBPermissions} from "@bananapus/core-v6/src/interfaces/IJBPermissions.s
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 import {JBPermissionsData} from "@bananapus/core-v6/src/structs/JBPermissionsData.sol";
 
-contract CodexNemesisPermissionReactivationTest is Test {
+/// @notice When a project NFT round-trips back to its original owner, that owner's previously-granted
+///         operator permission silently re-activates. This pins that behavior so future refactors keep it visible.
+contract StaleDelegateReactivationOnProjectReturnTest is Test {
     IJBProjects internal projects;
     IJBPermissions internal permissions;
 
