@@ -2,17 +2,18 @@
 
 ## Purpose
 
-`nana-ownable-v6` adapts `Ownable` to the Juicebox model. A contract can be owned by an address or by a Juicebox project NFT, and delegated operators can satisfy `onlyOwner` through `JBPermissions`.
+`nana-ownable-v6` adapts `Ownable` to the Juicebox model. A contract can be owned by an address or by a Juicebox project NFT, and project-owned contracts can let delegated operators satisfy `onlyOwner` through `JBPermissions`.
 
 ## System Overview
 
-This repo is an ownership primitive, not a policy layer. `JBOwnable` gives downstream repos a familiar inheritance surface. `JBOwnableOverrides` implements dynamic owner resolution, ownership transfer, renounce behavior, and delegated permission checks.
+This repo is an ownership primitive, not a policy layer. `JBOwnable` gives downstream repos a familiar inheritance surface. `JBOwnableOverrides` implements dynamic owner resolution, ownership transfer, renounce behavior, direct address-owner checks, and project-scoped delegated permission checks.
 
 Ownership can follow the current holder of a Juicebox project NFT instead of staying fixed to one address.
 
 ## Core Invariants
 
 - project-owned contracts must resolve the owner dynamically from the current project NFT holder
+- address-owned contracts must only accept the stored owner address
 - explicit ownership transfers reset the delegated permission ID
 - project NFT transfers do not mutate stored owner data; `_permissionOwner` decides whether a stored permission ID is
   effective
@@ -44,10 +45,10 @@ Ownership can follow the current holder of a Juicebox project NFT instead of sta
 ```text
 onlyOwner modifier
   -> load packed owner state
+  -> if address-owned, accept only the stored owner address
   -> if project-owned, resolve the current project NFT holder
-  -> otherwise use the stored owner address
-  -> ignore delegated permissions if the resolved owner differs from _permissionOwner
-  -> accept either the resolved owner or an operator with the effective JB permission
+  -> ignore delegated permissions if the resolved project owner differs from _permissionOwner
+  -> accept either the resolved project owner or an operator with the effective JB permission
 ```
 
 ## Accounting Model
@@ -57,7 +58,7 @@ No treasury accounting lives here. The important state is ownership resolution d
 ## Security Model
 
 - ownership resolution edge cases matter more than surface API shape
-- permission delegation is simple but security-sensitive because it composes with a global permission registry
+- project-owned permission delegation is simple but security-sensitive because it composes with a global permission registry
 - unresolvable project ownership is intentionally fail-closed
 
 ## Safe Change Guide
@@ -79,7 +80,9 @@ No treasury accounting lives here. The important state is ownership resolution d
   `test/regression/BurnLockProtection.t.sol`
 - permission staleness and reactivation:
   `test/regression/PermissionIdNFTTransfer.t.sol`
-  `test/audit/CodexNemesisPermissionReactivation.t.sol`
+  `test/regression/StaleDelegateReactivationOnProjectReturn.t.sol`
+- address-owned direct-owner policy:
+  `test/regression/AddressOwnerPermissionPolicy.t.sol`
 - ownership-state invariants:
   `test/OwnableInvariantTests.sol`
 
@@ -96,7 +99,8 @@ No treasury accounting lives here. The important state is ownership resolution d
 - `test/regression/BurnLockProtection.t.sol`
 - `test/regression/PermissionIdNFTTransfer.t.sol`
 - `test/regression/RootPermissionBypassesPermissionIdZero.t.sol`
-- `test/audit/CodexNemesisPermissionReactivation.t.sol`
+- `test/regression/StaleDelegateReactivationOnProjectReturn.t.sol`
+- `test/regression/AddressOwnerPermissionPolicy.t.sol`
 - `test/OwnableInvariantTests.sol`
 - `references/runtime.md`
 - `references/operations.md`

@@ -1,6 +1,6 @@
 # Juicebox Ownable
 
-`@bananapus/ownable-v6` is an ownership helper for contracts that should be controlled by a Juicebox project instead of a fixed wallet. It keeps the familiar `Ownable` shape while letting ownership follow a project NFT and optional delegated permissions.
+`@bananapus/ownable-v6` is an ownership helper for contracts that should be controlled by a Juicebox project instead of a fixed wallet. It keeps the familiar `Ownable` shape while letting ownership follow a project NFT and optional project-scoped delegated permissions.
 
 ## Documentation
 
@@ -20,7 +20,8 @@ This package extends the standard ownership model in three ways:
 
 - ownership can point to a Juicebox project ID instead of an address
 - `owner()` can resolve dynamically to the current holder of that project NFT
-- delegated operators can satisfy `onlyOwner` through a configured `JBPermissions` permission ID
+- project-owned contracts can let delegated operators satisfy `onlyOwner` through a configured `JBPermissions` permission ID
+- address-owned contracts are direct-owner-only
 
 For contracts that are already meant to be owned by a project, this avoids manual ownership transfers when the project NFT changes hands.
 
@@ -41,7 +42,7 @@ If the issue is in project ownership itself, start in `nana-core-v6` and `JBProj
 This package is a small ownership adapter:
 
 1. resolve who the effective owner is
-2. optionally allow a delegated permission to satisfy `onlyOwner`
+2. optionally allow a delegated permission to satisfy `onlyOwner` when the contract is project-owned
 3. preserve an `Ownable`-like interface for downstream contracts
 
 ## Read These Files First
@@ -54,7 +55,7 @@ This package is a small ownership adapter:
 
 - ownership may resolve to a project NFT holder instead of a fixed address, so caching `owner()` off-chain can go stale
 - `owner()` can resolve to `address(0)` if the referenced project NFT is invalid or unreadable, which effectively renounces the contract
-- delegated operator access depends on a chosen permission ID, not on a generic admin role
+- delegated operator access only applies in project-owned mode and depends on a chosen permission ID, not on a generic admin role
 - explicit ownership transfers reset the permission ID, but project NFT transfers do not mutate stored owner data
 - a project NFT round trip back to the owner who last set `permissionId` can reactivate that owner's still-granted delegates
 - ownership transfer and permission-ID updates are part of the security model, not just convenience helpers
@@ -72,7 +73,8 @@ This package is a small ownership adapter:
 3. `test/RegressionUnmintedProjectHijack.t.sol`
 4. `test/regression/BurnLockProtection.t.sol`
 5. `test/regression/PermissionIdNFTTransfer.t.sol`
-6. `test/audit/CodexNemesisPermissionReactivation.t.sol`
+6. `test/regression/StaleDelegateReactivationOnProjectReturn.t.sol`
+7. `test/regression/AddressOwnerPermissionPolicy.t.sol`
 
 ## Install
 
@@ -103,7 +105,8 @@ test/
 ## Risks And Notes
 
 - if ownership is tied to a project NFT and that NFT becomes unreachable, the contract is effectively locked
-- delegated access depends on a chosen permission ID, so bad permission selection is an operational risk
+- project-owned delegated access depends on a chosen permission ID, so bad permission selection is an operational risk
+- address-owned contracts cannot enable delegated owner access
 - permission IDs reset on explicit ownership transfers; project NFT transfers leave the ID stored but stale unless the
   resolved owner still matches the owner who set it
 - transferring ownership to a project validates that the project exists at transfer time, but later project invalidation can still collapse effective ownership to `address(0)`
