@@ -164,11 +164,20 @@ contract OwnableEdgeCases is Test {
         (,, permId) = ownable.jbOwner();
         assertEq(permId, 0, "permissionId should reset after transferOwnership");
 
-        // Set permissionId again as new owner.
+        // Address-owned contracts cannot enable delegated owner access.
         vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBOwnableOverrides.JBOwnableOverrides_AddressOwnerCannotSetPermissionId.selector, bob, 99
+            )
+        );
         ownable.setPermissionId(99);
+
+        // Address-owned contracts can still clear the permissionId.
+        vm.prank(bob);
+        ownable.setPermissionId(0);
         (,, permId) = ownable.jbOwner();
-        assertEq(permId, 99);
+        assertEq(permId, 0);
 
         // Transfer to project — permissionId should reset again.
         vm.prank(bob);
@@ -284,7 +293,9 @@ contract OwnableEdgeCases is Test {
     // Test 9: PermissionIdChanged event emitted correctly
     // =========================================================================
     function test_permissionIdChangedEvent() public {
-        MockOwnable ownable = new MockOwnable(projects, permissions, alice, 0);
+        uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnable ownable = new MockOwnable(projects, permissions, address(0), uint88(projectId));
 
         vm.expectEmit(true, true, false, true);
         emit IJBOwnable.PermissionIdChanged(42, alice);
@@ -422,7 +433,10 @@ contract OwnableEdgeCases is Test {
     ///         forwarded sender, not msg.sender.
     function test_permissionIdChangedEvent_usesOverriddenMsgSender() public {
         address forwarder = makeAddr("forwarder");
-        MockOwnableERC2771 ownable = new MockOwnableERC2771(projects, permissions, alice, 0, forwarder);
+        uint256 projectId = projects.createFor(alice);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        MockOwnableERC2771 ownable =
+            new MockOwnableERC2771(projects, permissions, address(0), uint88(projectId), forwarder);
 
         // Expect event with caller=alice (the forwarded sender), not forwarder.
         vm.expectEmit(true, true, false, true);

@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import {IJBProjects} from "@bananapus/core-v6/src/interfaces/IJBProjects.sol";
 
 /// @notice Interface for Juicebox-aware ownership. Supports two modes: address-based (a fixed EOA/contract owns the
-/// contract) or project-based (whoever holds a specific Juicebox project's ERC-721 NFT is the owner). The owner can
-/// delegate access to other addresses via `JBPermissions`.
+/// contract) or project-based (whoever holds a specific Juicebox project's ERC-721 NFT is the owner). Project-based
+/// owners can delegate access to other addresses via `JBPermissions`; address-based ownership is direct-owner-only.
 interface IJBOwnable {
     /// @notice Emitted when ownership is transferred to a new owner.
     /// @param previousOwner The address of the previous owner.
@@ -36,7 +36,8 @@ interface IJBOwnable {
     /// @notice Gives up ownership, making it impossible to call `onlyOwner` functions.
     function renounceOwnership() external;
 
-    /// @notice Sets the permission ID the owner can use to give other addresses owner access.
+    /// @notice Sets the permission ID a project-based owner can use to give other addresses owner access.
+    /// @dev Address-based owners can only set `permissionId` to 0.
     /// @param permissionId The permission ID to use for `onlyOwner`.
     function setPermissionId(uint8 permissionId) external;
 
