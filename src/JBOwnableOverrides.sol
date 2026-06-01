@@ -115,12 +115,8 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             return ownerInfo.owner;
         }
 
-        // If the project owner cannot be read, expose the owner as zero instead of bubbling the upstream revert.
-        try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
-            return projectOwner;
-        } catch {
-            return address(0);
-        }
+        // Expose the project owner, or zero if the project's NFT cannot be read, instead of bubbling the revert.
+        return _projectOwnerOf(ownerInfo.projectId);
     }
 
     //*********************************************************************//
@@ -150,11 +146,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
             return;
         } else {
             // Resolve the project owner dynamically; unreadable projects fail closed to address(0).
-            try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
-                resolvedOwner = projectOwner;
-            } catch {
-                resolvedOwner = address(0);
-            }
+            resolvedOwner = _projectOwnerOf(ownerInfo.projectId);
         }
 
         // Ignore the stored permission ID while the project NFT is held by a different owner than the one who set it.
@@ -177,6 +169,22 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         _requirePermissionFrom({
             account: resolvedOwner, projectId: ownerInfo.projectId, permissionId: effectivePermissionId
         });
+    }
+
+    /// @notice Resolves the current holder of a project's ownership NFT, or `address(0)` if the project's NFT cannot
+    /// be read.
+    /// @dev Wraps `PROJECTS.ownerOf` in a try-catch so an unreadable project (for example an NFT that has not been
+    /// minted yet) resolves to `address(0)` and owner-gated logic fails closed instead of bubbling the revert. The
+    /// resolution lives in one place so the try-catch lives in a single function rather than at every call site and in
+    /// every contract that inherits this.
+    /// @param projectId The ID of the project whose owner to resolve.
+    /// @return projectOwner The project's current owner, or `address(0)` if `PROJECTS.ownerOf` reverts.
+    function _projectOwnerOf(uint256 projectId) internal view virtual returns (address projectOwner) {
+        try PROJECTS.ownerOf(projectId) returns (address resolved) {
+            projectOwner = resolved;
+        } catch {
+            projectOwner = address(0);
+        }
     }
 
     //*********************************************************************//
@@ -288,11 +296,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         if (ownerInfo.projectId == 0) {
             oldOwner = ownerInfo.owner;
         } else {
-            try PROJECTS.ownerOf(ownerInfo.projectId) returns (address projectOwner) {
-                oldOwner = projectOwner;
-            } catch {
-                oldOwner = address(0);
-            }
+            oldOwner = _projectOwnerOf(ownerInfo.projectId);
         }
         // Explicit ownership transfers clear delegated access and the owner who authorized it.
         jbOwner = JBOwner({owner: newOwner, projectId: projectId, permissionId: 0});
