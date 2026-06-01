@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Raise dependency floors to the latest published versions.
+- Document NatSpec, comment, and lint conventions in STYLE_GUIDE.
+
 ## Scope
 
 This file describes the verified change from `nana-ownable-v5` to the current `nana-ownable-v6` repo.
