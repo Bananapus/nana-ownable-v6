@@ -67,12 +67,8 @@ contract JBOwnable is JBOwnableOverrides {
     {
         address resolvedNewOwner = newOwner;
         if (newProjectId != 0) {
-            try PROJECTS.ownerOf(newProjectId) returns (address projectOwner) {
-                resolvedNewOwner = projectOwner;
-            } catch {
-                // Pre-bound future projects have no visible owner yet, so the event reports address(0).
-                resolvedNewOwner = address(0);
-            }
+            // Pre-bound future projects have no visible owner yet, so the event reports address(0).
+            resolvedNewOwner = _projectOwnerOf(newProjectId);
         }
 
         emit OwnershipTransferred({previousOwner: previousOwner, newOwner: resolvedNewOwner, caller: _msgSender()});

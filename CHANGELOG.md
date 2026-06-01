@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Resolve a project's owner through a single internal `_projectOwnerOf` helper so the `PROJECTS.ownerOf` try-catch lives in one place instead of at every call site, reducing the bytecode every contract that inherits `JBOwnable` carries. Behavior is unchanged.
+- Raise dependency floors to the latest published versions.
+- Document NatSpec, comment, and lint conventions in STYLE_GUIDE.
+
 ## Scope
 
 This file describes the verified change from `nana-ownable-v5` to the current `nana-ownable-v6` repo.
