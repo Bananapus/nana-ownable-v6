@@ -2,7 +2,7 @@
 
 This repo provides ownership helpers that can follow Juicebox project NFTs instead of a fixed EOA. It is a small repo with outsized privilege impact.
 
-## Audit Objective
+## Audit objective
 
 Find any path that lets the wrong caller pass owner checks, strands a valid owner, or causes downstream contracts to
 reason from stale ownership data.
@@ -23,12 +23,12 @@ In scope:
 - `src/interfaces/`
 - `src/structs/`
 
-## Start Here
+## Start here
 
 1. `src/JBOwnable.sol`
 2. `src/JBOwnableOverrides.sol`
 
-## Security Model
+## Security model
 
 These contracts abstract "owner" as a project-based identity. Downstream repos use them to:
 
@@ -36,20 +36,20 @@ These contracts abstract "owner" as a project-based identity. Downstream repos u
 - allow project-scoped delegated operators to satisfy `onlyOwner`
 - keep admin power aligned with project NFT ownership instead of a static address
 
-## Roles And Privileges
+## Roles and privileges
 
 | Role | Powers | How constrained |
 |------|--------|-----------------|
 | Project NFT owner | Become the effective contract owner | Should update automatically with NFT transfers |
 | Delegated operator | Satisfy `onlyOwner` through a configured permission ID | Only works while the resolved owner matches the owner who set that ID |
 
-## Integration Assumptions
+## Integration assumptions
 
 | Dependency | Assumption | What breaks if wrong |
 |------------|------------|----------------------|
 | Juicebox project ownership | NFT ownership reflects intended authority | Downstream admin checks drift from reality |
 
-## Critical Invariants
+## Critical invariants
 
 1. Owner resolution is correct.  
    For any supported mode, `owner()` and owner checks must resolve to the intended authority and no one else.
@@ -59,7 +59,7 @@ These contracts abstract "owner" as a project-based identity. Downstream repos u
    Explicit ownable transfers must clear `permissionId`; project NFT transfers must ignore stale IDs unless the NFT
    returns to the owner who set them.
 
-## Attack Surfaces
+## Attack surfaces
 
 - owner resolution after project NFT transfer
 - zero-address and unreadable-project states

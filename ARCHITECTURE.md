@@ -4,13 +4,13 @@
 
 `nana-ownable-v6` adapts `Ownable` to the Juicebox model. A contract can be owned by an address or by a Juicebox project NFT, and project-owned contracts can let delegated operators satisfy `onlyOwner` through `JBPermissions`.
 
-## System Overview
+## System overview
 
 This repo is an ownership primitive, not a policy layer. `JBOwnable` gives downstream repos a familiar inheritance surface. `JBOwnableOverrides` implements dynamic owner resolution, ownership transfer, renounce behavior, direct address-owner checks, and project-scoped delegated permission checks.
 
 Ownership can follow the current holder of a Juicebox project NFT instead of staying fixed to one address.
 
-## Core Invariants
+## Core invariants
 
 - project-owned contracts must resolve the owner dynamically from the current project NFT holder
 - address-owned contracts must only accept the stored owner address
@@ -32,15 +32,15 @@ Ownership can follow the current holder of a Juicebox project NFT instead of sta
 | `JBOwner` | Packed owner state | Shared struct |
 | `IJBOwnable` | Public interface and events | Integration surface |
 
-## Trust Boundaries
+## Trust boundaries
 
 - ownership resolution depends on `JBProjects` and `JBPermissions` from `nana-core-v6`
 - this repo does not create a new permission namespace
 - inheriting contracts may add policy on top, but the resolution semantics here are infrastructure-level
 
-## Critical Flows
+## Critical flows
 
-### Owner Check
+### Owner check
 
 ```text
 onlyOwner modifier
@@ -51,24 +51,24 @@ onlyOwner modifier
   -> accept either the resolved project owner or an operator with the effective JB permission
 ```
 
-## Accounting Model
+## Accounting model
 
 No treasury accounting lives here. The important state is ownership resolution data and delegated permission ID.
 
-## Security Model
+## Security model
 
 - ownership resolution edge cases matter more than surface API shape
 - project-owned permission delegation is simple but security-sensitive because it composes with a global permission registry
 - unresolvable project ownership is intentionally fail-closed
 
-## Safe Change Guide
+## Safe change guide
 
 - be conservative with transfer and renounce semantics
 - if event emission or transfer behavior changes, inspect deployer wrappers and inheriting repos
 - if project-based ownership semantics change, re-check unminted-project and unresolvable-project behavior explicitly
 - keep explicit ownership-transfer resets and project-NFT-transfer staleness checks distinct
 
-## Canonical Checks
+## Canonical checks
 
 - baseline address-owner and project-owner behavior:
   `test/Ownable.t.sol`
@@ -86,7 +86,7 @@ No treasury accounting lives here. The important state is ownership resolution d
 - ownership-state invariants:
   `test/OwnableInvariantTests.sol`
 
-## Source Map
+## Source map
 
 - `src/JBOwnable.sol`
 - `src/JBOwnableOverrides.sol`

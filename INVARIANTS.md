@@ -6,7 +6,7 @@ This file is the per-repo scoped invariants doc. The protocol-wide guarantees fo
 
 ---
 
-# Section A — Guarantees to Callers of an `onlyOwner` Function
+## Section A — Guarantees to callers of an `onlyOwner` function
 
 The "users" of a `JBOwnable`-inheriting contract are everyone who calls one of its `onlyOwner` functions: the resolved owner, anyone the project owner has delegated to via `JBPermissions`, and any third party who might try (and must fail). There is no payer-side or holder-side surface in this repo — the package contributes only an authorization primitive.
 
@@ -34,7 +34,7 @@ The "users" of a `JBOwnable`-inheriting contract are everyone who calls one of i
 
 ---
 
-# Section B — Guarantees to the Owner
+## Section B — Guarantees to the owner
 
 ## B.1 Powers the owner retains
 
@@ -60,7 +60,7 @@ The "users" of a `JBOwnable`-inheriting contract are everyone who calls one of i
 
 ---
 
-# Section C — Per-Contract Operation Inventory
+## Section C — Per-contract operation inventory
 
 `JBOwnable` (concrete, 80 lines) and `JBOwnableOverrides` (abstract base, 280 lines) are the only Solidity files in `src/`. The interface `IJBOwnable` and struct `JBOwner` are types, not contracts.
 
@@ -152,7 +152,7 @@ The packed storage struct: `{address owner; uint88 projectId; uint8 permissionId
 
 ---
 
-# Section D — Cross-Cutting Invariants
+## Section D — Cross-cutting invariants
 
 - **D.1 Fail-closed on every unreadable owner.** Three paths read `PROJECTS.ownerOf` with try-catch — `owner()` (`src/JBOwnableOverrides.sol:111–115`), `_checkOwner` (`src/JBOwnableOverrides.sol:136–140`), and `_transferOwnership`'s previous-owner resolution (`src/JBOwnableOverrides.sol:268–272`) — and all three fall back to `address(0)`. The fourth path (`JBOwnable._emitTransferEvent`'s NEW-owner resolution) also falls back to `address(0)`. There is no path that bubbles a project-lookup revert up to the caller; the contract universally treats an unreadable project as "no owner." Because `_msgSender()` is never `address(0)` in normal EVM execution, "no owner" always means "no one can authenticate."
 - **D.2 NFT transfer is the canonical re-permissioning event.** Project NFT transfers transparently and atomically: (a) move `onlyOwner` access (A.1.2), (b) invalidate every delegate grant by making `resolvedOwner != _permissionOwner` (A.3.1), and (c) leave `jbOwner.permissionId` UNCHANGED in storage (only its *effective* value flips to zero). If the NFT later returns to the original `_permissionOwner`, delegation reactivates (A.3.2). The owner can pre-empt that by calling `setPermissionId(0)` before transferring the NFT.
@@ -167,7 +167,7 @@ The packed storage struct: `{address owner; uint88 projectId; uint8 permissionId
 
 ---
 
-# Section E — Centralization Caveats
+## Section E — Centralization caveats
 
 **None at the library layer.** `JBOwnable` is a base contract; it has no admin, no owner of its own (the owner OF the inheriting contract is determined per-deployment by that contract's constructor args), no pause, no upgrade hook, no fee setting, no allowlist, no registry.
 
@@ -187,7 +187,7 @@ Upstream centralization that affects every consumer indirectly:
 
 ---
 
-# Section F — Key Code References
+## Section F — Key code references
 
 | Invariant | File:lines |
 |---|---|
