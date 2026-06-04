@@ -65,11 +65,10 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
 
     /// @dev To restrict access to a Juicebox project's owner, pass that project's ID as the `initialProjectIdOwner` and
     /// the zero address as the `initialOwner`.
-    /// To restrict access to a specific address, pass that address as the `initialOwner` and `0` as the
-    /// `initialProjectIdOwner`.
+    /// To restrict access to a specific address, pass it as `initialOwner` and `0` as `initialProjectIdOwner`.
     /// @dev Project-based owners can give owner access to other addresses through the `permissions` contract.
-    /// Address-based owners cannot enable delegated owner access because `JBPermissions` project ID `0` is the
-    /// wildcard project namespace.
+    /// Address-based owners cannot delegate owner access because `JBPermissions` project ID `0` is the wildcard
+    /// project namespace.
     /// @dev If `initialProjectIdOwner` references an unminted project, `owner()` resolves to `address(0)` and
     /// owner-gated calls revert until that project is created. The first account to mint that project becomes the
     /// effective owner, so deployers must control the mint sequence.
@@ -208,8 +207,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         _setPermissionId(permissionId);
     }
 
-    /// @notice Transfers ownership of this contract to a new address (the `newOwner`). Can only be called by the
-    /// current owner.
+    /// @notice Transfers ownership of this contract to a new address. Can only be called by the current owner.
     /// @dev The `permissionId` is reset to 0 on transfer to prevent permission clashes for the new owner.
     /// The new owner must explicitly call `setPermissionId()` to configure owner-level permission delegation.
     /// @param newOwner The address to transfer ownership to.
@@ -222,8 +220,7 @@ abstract contract JBOwnableOverrides is Context, JBPermissioned, IJBOwnable {
         _transferOwnership({newOwner: newOwner, projectId: 0});
     }
 
-    /// @notice Transfers ownership to a Juicebox project — whoever holds that project's ERC-721 NFT becomes the
-    /// owner.
+    /// @notice Transfers ownership to a Juicebox project, whose ERC-721 NFT holder becomes the owner.
     /// @dev The `permissionId` is reset to 0 on transfer to prevent the previous owner's delegates from retaining
     /// access. The new project owner must call `setPermissionId()` to re-enable delegation.
     /// @dev The `projectId` must fit within a `uint88` and the project must already exist.

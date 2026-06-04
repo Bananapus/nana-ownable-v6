@@ -17,10 +17,8 @@ contract JBOwnable is JBOwnableOverrides {
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
-    /// @dev To make a Juicebox project's owner this contract's owner, pass that project's ID as the
-    /// `initialProjectIdOwner`.
-    /// @dev To make a specific address the owner, pass that address as the `initialOwner` and `0` as the
-    /// `initialProjectIdOwner`.
+    /// @dev To make a Juicebox project's owner this contract's owner, pass its ID as `initialProjectIdOwner`.
+    /// @dev To make a specific address the owner, pass it as `initialOwner` and `0` as `initialProjectIdOwner`.
     /// @dev The owner can give other addresses owner access through the `permissions` contract.
     /// @param permissions A contract storing permissions.
     /// @param projects Mints ERC-721s that represent project ownership and transfers.
