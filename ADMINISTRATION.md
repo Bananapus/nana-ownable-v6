@@ -1,6 +1,6 @@
 # Administration
 
-## At A Glance
+## At a glance
 
 | Item | Details |
 | --- | --- |
@@ -13,7 +13,7 @@
 
 `nana-ownable-v6` does not add a new admin surface by itself. It defines how ownership is resolved for other repos. The important question is how a contract's `owner()` is determined and how delegated permission IDs behave across ownership transfers.
 
-## Control Model
+## Control model
 
 - ownership can be address-based or project-based
 - address-based ownership is direct-owner-only
@@ -31,7 +31,7 @@
 | Project owner | Holder of the referenced project NFT | Per contract | Dynamic ownership resolution |
 | Delegated operator | `JBPermissions` grant with the configured permission ID | Per project-owned contract and project | Only if the contract is project-owned and the owner enables it |
 
-## Privileged Surfaces
+## Privileged surfaces
 
 The meaningful control surfaces are inherited by downstream contracts:
 
@@ -41,14 +41,14 @@ The meaningful control surfaces are inherited by downstream contracts:
 - `renounceOwnership()`
 - `onlyOwner` checks that resolve either the direct owner or the current project NFT holder
 
-## Immutable And One-Way
+## Immutable and one-way
 
 - project ownership changes dynamically with project NFT transfers
 - delegated permission ID resets on explicit ownership transfer or renounce
 - project NFT transfer can make a stored permission ID stale without clearing it from storage
 - renouncing ownership is final unless the inheriting contract adds a separate recovery path
 
-## Operational Notes
+## Operational notes
 
 - treat project-based ownership as live routing, not a snapshot
 - distinguish explicit ownership transfer from project NFT transfer: the former clears `permissionId`, the latter only
@@ -58,7 +58,7 @@ The meaningful control surfaces are inherited by downstream contracts:
 - expect `setPermissionId(nonzero)` to revert while a contract is address-owned
 - review the inheriting contract, not just this primitive, to understand the full admin surface
 
-## Machine Notes
+## Machine notes
 
 - do not conclude authority from this repo alone; follow the inheriting contract's `onlyOwner` surfaces
 - treat explicit ownership transfer as changing both owner identity and usable delegated permission ID
@@ -71,14 +71,14 @@ The meaningful control surfaces are inherited by downstream contracts:
 - this primitive has no protocol-wide recovery surface
 - if ownership was transferred to the wrong project or address, recovery depends on the inheriting contract still recognizing the current owner
 
-## Admin Boundaries
+## Admin boundaries
 
 - this repo does not create a new permission namespace
 - it cannot make an inheriting contract safer than that contract's own privileged functions
 - it keeps address-owned contracts direct-owner-only
 - it clears delegated operators only on explicit ownership-transfer paths
 
-## Source Map
+## Source map
 
 - `src/JBOwnable.sol`
 - `src/JBOwnableOverrides.sol`

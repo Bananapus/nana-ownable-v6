@@ -1,22 +1,22 @@
 # User Journeys
 
-## Repo Purpose
+## Repo purpose
 
 This repo adapts `Ownable`-style control to Juicebox project ownership and project-scoped operator permissions. It is an ownership adapter. It does not replace the underlying ownership or permission registries in [nana-core-v6](../nana-core-v6/USER_JOURNEYS.md).
 
-## Primary Actors
+## Primary actors
 
 - protocol or product teams that want `onlyOwner` to follow a project NFT
 - operators who need owner-like access without receiving the project itself
 - auditors checking whether delegated owner semantics strand or over-grant authority
 
-## Key Surfaces
+## Key surfaces
 
 - `JBOwnable`: `Ownable`-style adapter whose owner follows a Juicebox project
 - `JBOwnableOverrides`: extension that lets a project-scoped permission satisfy `onlyOwner`
 - `owner()`, `transferOwnership(...)`, `transferOwnershipToProject(...)`, `setPermissionId(...)`: core ownership-resolution and migration paths
 
-## Journey 1: Give A Contract To A Juicebox Project Instead Of A Wallet
+## Journey 1: Give a contract to a Juicebox project instead of a wallet
 
 **Actor:** downstream contract author.
 
@@ -39,7 +39,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 **Postconditions**
 - `owner()` now resolves through the configured project NFT instead of a fixed wallet
 
-## Journey 2: Delegate Owner-Level Access To Operators
+## Journey 2: Delegate owner-level access to operators
 
 **Actor:** current project owner.
 
@@ -63,7 +63,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 **Postconditions**
 - the chosen operator can satisfy `onlyOwner` without receiving direct ownership of the project or contract
 
-## Journey 3: Change The Delegated Permission ID Without Changing Ownership
+## Journey 3: Change the delegated permission ID without changing ownership
 
 **Actor:** current effective owner.
 
@@ -85,7 +85,7 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 **Postconditions**
 - the adapter now resolves delegated owner access through the new permission ID only
 
-## Journey 4: Transfer Or Burn Ownership Deliberately
+## Journey 4: Transfer or burn ownership deliberately
 
 **Actor:** current effective owner.
 
@@ -108,12 +108,12 @@ This repo adapts `Ownable`-style control to Juicebox project ownership and proje
 **Postconditions**
 - control moves to the chosen address or project, or is intentionally removed
 
-## Trust Boundaries
+## Trust boundaries
 
 - this repo trusts `JBProjects` for project ownership and `JBPermissions` for delegated authority
 - downstream contracts still need their own audit because this adapter changes who satisfies `onlyOwner`
 
-## Hand-Offs
+## Hand-offs
 
 - Use [nana-core-v6](../nana-core-v6/USER_JOURNEYS.md) for the project-NFT and permission machinery this adapter depends on.
 - Use [nana-permission-ids-v6](../nana-permission-ids-v6/USER_JOURNEYS.md) if you need the shared numeric permission vocabulary for delegated `onlyOwner` checks.
