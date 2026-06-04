@@ -12,7 +12,7 @@
 - [SKILLS.md](./SKILLS.md) — reusable patterns and gotchas for builders
 - [STYLE_GUIDE.md](./STYLE_GUIDE.md) — code style conventions
 - [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md) — guidance for auditors
-- [CHANGELOG.md](./CHANGELOG.md) — release notes
+- [CHANGELOG.md](./CHANGELOG.md) - V5 to V6 migration changelog
 - [references/runtime.md](./references/runtime.md) — owner-resolution, transfer, and delegation behavior by surface
 - [references/operations.md](./references/operations.md) — change checklist and common failure modes
 
