@@ -1,10 +1,10 @@
-# Changelog
+# V5 to V6 Changelog
 
 ## Scope
 
-This file describes the verified change from `nana-ownable-v5` to the current `nana-ownable-v6` repo.
+This is a V5-to-V6 migration changelog, not a package release log or commit history. It compares `nana-ownable-v5` in `../../v5/evm` with the current `nana-ownable-v6` repo.
 
-## Current v6 surface
+## Current V6 Surface
 
 - `JBOwnable`
 - `JBOwnableOverrides`
@@ -13,33 +13,52 @@ This file describes the verified change from `nana-ownable-v5` to the current `n
 
 ## Summary
 
-- Project-backed ownership resolves through a single internal `_projectOwnerOf` helper, so the `PROJECTS.ownerOf` try-catch lives in one place and every contract inheriting `JBOwnable` carries less bytecode.
-- Project-backed ownership tolerates invalid or burned project NFTs: an `ownerOf` failure resolves to `address(0)` rather than surfacing as an unchecked revert.
-- The project-ownership transfer path validates that the target project exists before transferring control to it.
-- Ownership-transfer events carry the caller through `_msgSender()`, so meta-transaction relayers report the originating account.
-- The implementation baseline is `0.8.28`.
+- The public ownership interface is intentionally close to V5, but V6 is stricter and safer around project-owned contracts.
+- `owner()` resolves project ownership more defensively when the referenced project cannot be read yet or no longer exists.
+- Transfers to project ownership validate the target project and reset permission IDs to avoid stale delegate authority.
+- The event surface remains familiar, but V6 emits ownership transfer information with safer resolution for future/pre-bound projects.
 
-## Maintenance
+## ABI, Event, and Error Changes
 
-- Raise dependency floors to the latest published versions; document NatSpec, comment, and lint conventions in `STYLE_GUIDE.md`.
+- Function surface remains stable:
+  - `PROJECTS()`
+  - `jbOwner()`
+  - `owner()`
+  - `renounceOwnership()`
+  - `setPermissionId(uint8)`
+  - `transferOwnership(address)`
+  - `transferOwnershipToProject(uint256)`
+- Events remain:
+  - `OwnershipTransferred`
+  - `PermissionIdChanged`
+- Added or migration-sensitive errors:
+  - `JBOwnableOverrides_AddressOwnerCannotSetPermissionId`
+  - `JBOwnableOverrides_InvalidNewOwner`
+  - `JBOwnableOverrides_ProjectDoesNotExist`
 
-## Verified deltas
+## Machine-Checked ABI Coverage
 
-- `JBOwnable` emits ownership-transfer events through `_msgSender()`.
-- `transferOwnershipToProject(...)` reverts `JBOwnableOverrides_ProjectDoesNotExist` when the target project does not exist.
-- Project-owner resolution falls back to `address(0)` when `PROJECTS.ownerOf` reverts, rather than bubbling the revert to the caller.
-- Imports resolve against `@bananapus/core-v6`.
+Generated from Foundry `out/**/*.json` artifacts, filtered to this repo's own runtime source roots and excluding tests, scripts, and dependencies.
 
-## Breaking ABI changes
+- V5 comparison package: `nana-ownable-v5`.
+- Own-source ABI artifacts compared: V6 `3`, V5 `3`.
+- Contract/interface coverage: `0` added, `0` removed, `2` shared names with ABI changes, `1` shared names ABI-identical.
+- Shared-name ABI item deltas: `6` added, `4` removed, `0` modified.
 
-- `IJBOwnable` preserves its public function shape; there is no function-signature migration.
-- The migration is behavioral: project-backed ownership resolution and transfer validation are stricter.
+Shared ABI artifacts with changes:
+- `JBOwnable`: `3` added, `2` removed, `0` modified ABI items.
+- `JBOwnableOverrides`: `3` added, `2` removed, `0` modified ABI items.
 
-## Indexer impact
+Generated event/error name deltas:
+- Error names added:
+  - `JBOwnableOverrides_AddressOwnerCannotSetPermissionId`, `JBOwnableOverrides_InvalidNewOwner`, `JBOwnableOverrides_ProjectDoesNotExist`.
+- Error names removed or replaced:
+  - `JBOwnableOverrides_InvalidNewOwner`, `JBOwnableOverrides_ProjectDoesNotExist`.
 
-- Event names are stable, but `OwnershipTransferred.caller` carries the `_msgSender()` account rather than the raw transaction sender, so meta-transaction-aware consumers should read the caller field as the originating account.
+Shared ABI artifacts checked with no ABI item changes:
+- `IJBOwnable`.
 
-## Migration notes
+## Migration Notes
 
-- Consumers that relied on `owner()` reverting for an invalid project-backed state must instead handle a resolved `address(0)`.
-- Rebuild imports against `@bananapus/core-v6`.
+- V5 integrations that only read the interface may not need calldata changes, but they should update error handling and ownership-resolution assumptions.
+- Re-check automation that transfers ownership to a project before or around project creation. V6 is more explicit about invalid project ownership states.
