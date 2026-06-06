@@ -32,34 +32,12 @@ contract AuthPermissions {
         verdict = v;
     }
 
-    function hasPermission(
-        address,
-        address,
-        uint256,
-        uint256,
-        bool,
-        bool
-    )
-        external
-        view
-        returns (bool)
-    {
+    function hasPermission(address, address, uint256, uint256, bool, bool) external view returns (bool) {
         return verdict;
     }
 
     // The override used by `_requirePermissionFrom` is the single-permission form; provide both shapes.
-    function hasPermissions(
-        address,
-        address,
-        uint256,
-        uint256[] calldata,
-        bool,
-        bool
-    )
-        external
-        view
-        returns (bool)
-    {
+    function hasPermissions(address, address, uint256, uint256[] calldata, bool, bool) external view returns (bool) {
         return verdict;
     }
 }
