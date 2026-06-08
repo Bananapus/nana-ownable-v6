@@ -1,6 +1,6 @@
 {
   "name": "@bananapus/ownable-v6",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -17,11 +17,11 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@bananapus/core-v6": "^0.0.82",
+    "@bananapus/core-v6": "^0.0.86",
     "@openzeppelin/contracts": "5.6.1"
   },
   "devDependencies": {
-    "@bananapus/permission-ids-v6": "^0.0.30"
+    "@bananapus/permission-ids-v6": "^0.0.31"
   },
   "scripts": {
     "test": "forge test",
